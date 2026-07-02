@@ -1,0 +1,2664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>香港 → 冰岛 7日环岛行程方案</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  /*
+    设计基调：登机牌 / 护照内页的视觉语言——这是"旅行"这件事本身自带的视觉素材，
+    比通用的 SaaS 仪表盘风格更贴题。数据（时间、价格、天数）一律用等宽字体排版，
+    呈现票根上对齐数字的质感；每天的行程卡片做成"票根撕开"的造型（左侧票根 + 虚线
+    撕口 + 右侧主体）。配色避开"奶油色+赤陶""纯黑+荧光绿"这类网上最常见的 AI 生成
+    默认配色，改用深靛蓝 + 琥珀 + 墨绿，呼应护照内页烫金字与登机牌印章的颜色。
+  */
+  :root {
+    --navy: #16232e;
+    --navy-soft: #243446;
+    --paper: #f4f5f0;
+    --card: #ffffff;
+    --amber: #d9821f;
+    --amber-soft: #f6e4c8;
+    --teal: #1f6f64;
+    --teal-soft: #dcece8;
+    --rust: #c0432c;
+    --rust-soft: #f6e2dc;
+    --line: #dfe1d8;
+    --ink: #1c211d;
+    --ink-soft: #5c655f;
+    --serif: "Source Han Serif SC", "Songti SC", "STSong", ui-serif, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 17px; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- 顶部操作栏：最显眼位置放打印/分享按钮 ---------- */
+  .action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--navy-soft);
+  }
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 22px;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: var(--sans);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .action-btn.primary { background: var(--amber); color: #1c211d; }
+
+  /* ---------- 顶部：护照封面式标题区 ---------- */
+  header.cover {
+    background: var(--navy);
+    background-image: radial-gradient(circle at 92% -10%, rgba(217,130,31,0.35), transparent 45%);
+    color: #fdfcf8;
+    padding: 34px 22px 26px;
+  }
+  header.cover .kicker {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 10px;
+  }
+  header.cover h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(1.7rem, 4.8vw, 2.4rem);
+    margin: 0 0 18px;
+    letter-spacing: 0.01em;
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 14px;
+    border-top: 1px dashed rgba(255,255,255,0.25);
+    padding-top: 16px;
+  }
+  .field-row .field .k {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 3px;
+  }
+  .field-row .field .v {
+    font-family: var(--mono);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #fdfcf8;
+  }
+
+  /* ---------- 标签导航：票根样式 ---------- */
+  nav.tabs {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    gap: 2px;
+    padding: 10px 14px 0;
+    background: var(--paper);
+    overflow-x: auto;
+    border-bottom: 1px solid var(--line);
+  }
+  nav.tabs button {
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    border-bottom: none;
+    background: var(--card);
+    padding: 10px 18px;
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+    font-size: 0.98rem;
+    font-family: var(--sans);
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  nav.tabs button.active {
+    background: var(--paper);
+    color: var(--navy);
+    font-weight: 700;
+    border-color: var(--line);
+    position: relative;
+    top: 1px;
+  }
+
+  main { max-width: 760px; margin: 0 auto; padding: 22px 18px 70px; }
+
+  section.tab-content { display: none; }
+  section.tab-content.active { display: block; }
+
+  h2 {
+    font-family: var(--serif);
+    color: var(--navy);
+    font-size: 1.55rem;
+    margin: 0 0 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  h2::after { content: ""; flex: 1; border-bottom: 1px dashed var(--line); }
+  h3 { font-family: var(--sans); margin-top: 22px; }
+
+  .lede { color: var(--ink-soft); font-size: 1.02rem; margin: -6px 0 18px; }
+
+  /* ---------- 概览统计 ---------- */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin: 4px 0 18px;
+  }
+  .overview-grid .stat {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .overview-grid .stat .label { font-size: 0.86rem; color: var(--ink-soft); margin-bottom: 4px; }
+  .overview-grid .stat .value { font-family: var(--mono); font-size: 1.35rem; font-weight: 700; color: var(--navy); }
+  .overview-grid .stat.accent .value { color: var(--amber); }
+
+  /* ---------- 天气小卡片（概览页） ---------- */
+  .weather-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin: 18px 0;
+  }
+  .weather-card:empty { display: none; }
+  .weather-card h4 { margin: 0 0 8px; font-family: var(--sans); color: var(--navy); }
+  .weather-card .weather-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .weather-card .weather-day {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    min-width: 110px;
+  }
+  .weather-card .weather-day .d { font-size: 0.8rem; color: var(--ink-soft); }
+  .weather-card .weather-day .t { font-family: var(--mono); font-weight: 700; color: var(--navy); font-size: 1.05rem; }
+  .weather-card .weather-tip { font-size: 0.92rem; color: var(--ink-soft); }
+
+  /* ---------- 行程：票根卡片 ---------- */
+  .add-all-calendar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .cta-button {
+    display: inline-block;
+    background: var(--teal);
+    color: #fff;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+  }
+  .cta-hint { font-size: 0.8rem; color: var(--ink-soft); }
+
+  .day-card {
+    display: flex;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 18px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(22,35,46,0.04);
+  }
+  .day-card .stub {
+    flex: 0 0 64px;
+    background: var(--navy);
+    color: #fdfcf8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 10px 4px;
+    cursor: pointer;
+  }
+  .day-card .stub::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; right: -1px;
+    width: 0;
+    border-right: 2px dashed rgba(244,245,240,0.35);
+  }
+  .day-card .stub .stub-num {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    writing-mode: vertical-rl;
+    letter-spacing: 0.05em;
+  }
+  .day-card .body { flex: 1; padding: 14px 16px 16px; min-width: 0; }
+  .day-card h3 {
+    margin: 0 0 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.08rem;
+  }
+  .day-card h3 .day-date { font-weight: 400; color: var(--ink-soft); font-size: 0.92rem; }
+  .day-card h3::after { content: "收起 ▾"; color: var(--ink-soft); font-size: 0.84rem; font-weight: 400; }
+  .day-card.collapsed h3::after { content: "展开 ▸"; }
+  .day-card.collapsed .timeline,
+  .day-card.collapsed .day-total { display: none; }
+
+
+  /* 地点照片缩略图（时间轴条目旁） */
+
+  ol.timeline { list-style: none; margin: 0; padding: 0; }
+  ol.timeline li {
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 1rem;
+  }
+  ol.timeline li:last-child { border-bottom: none; }
+  ol.timeline .time { font-family: var(--mono); font-weight: 700; color: var(--navy); margin-right: 8px; }
+  ol.timeline .desc { color: var(--ink); }
+  ol.timeline .rating {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.86rem;
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  ol.timeline li.nav-leg { padding: 6px 0; }
+  ol.timeline li.nav-leg a {
+    color: var(--amber);
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 600;
+    background: var(--amber-soft);
+    padding: 5px 11px;
+    border-radius: 8px;
+    display: inline-block;
+  }
+  /* 地点媒体：照片缩略图 */
+  .item-media {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .item-media .thumb {
+    width: 84px;
+    height: 84px;
+    border-radius: 9px;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    background: var(--paper);
+  }
+  ol.timeline li.conflict-warning { background: var(--rust-soft); border-radius: 8px; padding-left: 8px; }
+  ol.timeline li.conflict-warning .desc { color: var(--rust); }
+  .item-actions { display: block; margin-top: 6px; }
+  .mini-action {
+    display: inline-block;
+    font-size: 0.86rem;
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 7px;
+    margin: 3px 6px 0 0;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    background: var(--paper);
+  }
+  .mini-action.booking, .mini-action.booking-text { color: var(--teal); border-color: var(--teal-soft); background: var(--teal-soft); }
+
+  .day-total { color: var(--ink-soft); font-size: 0.92rem; margin: 10px 0 0; font-family: var(--mono); }
+
+  /* ---------- 极速地点方位图（SVG，无地图瓦片） ---------- */
+  .svg-map-wrap {
+    position: relative;
+    margin-bottom: 20px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: 0 1px 4px rgba(22,35,46,.06);
+    background: var(--card);
+  }
+  .svg-map-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 0.84rem;
+  }
+  .svg-map-toolbar strong { color: var(--ink); }
+  #trip-map.svg-trip-map {
+    display: block;
+    height: auto;
+    width: 100%;
+    max-height: 520px;
+    background: #f8fafc;
+  }
+  .svg-map-caption {
+    font-size: 17px;
+    font-family: var(--mono);
+    fill: #667085;
+    font-weight: 700;
+  }
+  .svg-map-label {
+    font-size: 13px;
+    fill: #25313d;
+    paint-order: stroke;
+    stroke: rgba(255,255,255,.92);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+    pointer-events: none;
+  }
+  .svg-marker circle {
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.22));
+  }
+  .svg-marker.map-active circle {
+    stroke: #111827;
+    stroke-width: 5;
+  }
+  .svg-active-route {
+    stroke: var(--teal);
+    stroke-width: 5;
+    stroke-linecap: round;
+    opacity: .92;
+  }
+  .map-legend {
+    position: absolute;
+    bottom: 36px;
+    left: 10px;
+    background: rgba(253,252,248,.92);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    z-index: 5;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    max-width: 60%;
+  }
+  .map-legend-item { display: flex; align-items: center; gap: 5px; }
+  .map-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid rgba(255,255,255,.8); }
+  .map-show-all-btn {
+    position: absolute;
+    top: 54px;
+    right: 10px;
+    z-index: 5;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 0.86rem;
+    cursor: pointer;
+    color: var(--ink);
+    box-shadow: 0 1px 3px rgba(22,35,46,.1);
+  }
+  .map-show-all-btn:hover { background: var(--paper); }
+  .map-no-coords {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 14px;
+    padding: 24px 20px;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  /* 导航段点击提示 */
+  .nav-leg.map-active { background: rgba(31,111,100,.08); border-radius: 7px; }
+  .map-seg-hint {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.78rem;
+    color: var(--teal);
+    opacity: .75;
+  }
+  .nav-leg-nolink { color: var(--ink-soft); font-size: 0.92rem; }
+
+  /* ---------- 预算表格（按天→类别层级） ---------- */
+  .budget-meta { color: var(--ink-soft); font-size: 0.92rem; margin: 4px 0; }
+  .grand-total, .per-head { font-family: var(--mono); font-size: 1.1rem; margin: 4px 0; }
+  .grand-total-final, .per-head-final { font-family: var(--mono); font-size: 1.1rem; margin: 4px 0; }
+  .display-conversion { font-family: var(--mono); font-size: 0.9rem; color: var(--ink-soft); margin: 2px 0; }
+  .grand-total strong, .per-head strong,
+  .grand-total-final strong, .per-head-final strong { color: var(--amber); }
+
+  .budget-day-block { margin-bottom: 20px; }
+  .budget-day-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 0 0 8px;
+    padding: 6px 12px;
+    background: var(--paper);
+    border-left: 4px solid var(--amber);
+    border-radius: 0 8px 8px 0;
+  }
+  .budget-grand-summary {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-top: 4px;
+  }
+  table.budget-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    background: var(--card);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  table.budget-table th, table.budget-table td {
+    border-bottom: 1px solid var(--line);
+    padding: 8px 11px;
+    text-align: left;
+    vertical-align: middle;
+  }
+  table.budget-table th {
+    background: var(--navy);
+    color: #fdfcf8;
+    font-weight: 600;
+    font-size: 0.86rem;
+  }
+  table.budget-table td { font-size: 0.93rem; }
+  td.budget-cat-cell {
+    font-weight: 600;
+    color: var(--navy);
+    font-size: 0.88rem;
+    background: var(--paper);
+    white-space: nowrap;
+    border-right: 1px solid var(--line);
+  }
+  td.budget-amt { font-family: var(--mono); text-align: right; white-space: nowrap; }
+  tr.day-subtotal-row td {
+    background: rgba(31,111,100,.06);
+    font-size: 0.9rem;
+    color: var(--teal);
+    border-top: 2px solid var(--line);
+  }
+
+  /* ---------- 地点图鉴 ---------- */
+  .places-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .place-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .place-photo-wrap {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    min-height: 150px;
+    max-height: 220px;
+    background: var(--paper);
+    overflow: hidden;
+  }
+  .place-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .place-photo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-soft);
+    font-size: 0.84rem;
+  }
+  .place-info { padding: 12px 14px 14px; }
+  .place-name { margin: 0 0 4px; font-family: var(--sans); font-size: 1.02rem; }
+  .place-meta { font-size: 0.8rem; color: var(--ink-soft); margin-bottom: 6px; }
+  .place-rating { color: var(--amber); font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; }
+  .place-review { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 8px; }
+  .place-services {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line);
+  }
+  .place-services-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--teal);
+    margin-bottom: 4px;
+  }
+  .place-services ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  .place-services li {
+    font-size: 0.84rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin-bottom: 3px;
+  }
+
+  /* ---------- 清单 / 印章卡片（签证、本地需求）---------- */
+  .checklist {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    position: relative;
+    font-size: 1rem;
+  }
+  .checklist::before {
+    content: attr(data-stamp);
+    position: absolute;
+    top: 16px; right: 18px;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    color: var(--teal);
+    border: 1.5px solid var(--teal);
+    border-radius: 999px;
+    padding: 3px 11px;
+    transform: rotate(6deg);
+    opacity: 0.75;
+  }
+  .checklist h4 { font-family: var(--sans); font-size: 1.05rem; margin-top: 18px; }
+
+  /* 普通项目符号列表：用一条短横替代默认圆点，呼应票根虚线的视觉语言 */
+  .checklist ul:not(.steps):not(.checklist-items) {
+    list-style: none;
+    padding-left: 4px;
+    margin: 12px 0;
+  }
+  .checklist ul:not(.steps):not(.checklist-items) li {
+    position: relative;
+    padding: 7px 0 7px 24px;
+    line-height: 1.6;
+  }
+  .checklist ul:not(.steps):not(.checklist-items) li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--amber);
+    font-weight: 700;
+  }
+
+  /* 步骤型清单：圆形编号徽标 + 竖向虚线，比"1. 2. 3."的纯文本编号更易读 */
+  .checklist ol.steps {
+    list-style: none;
+    counter-reset: step;
+    padding-left: 0;
+    margin: 16px 0;
+  }
+  .checklist ol.steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 10px 0 14px 46px;
+    border-bottom: 1px dashed var(--line);
+    line-height: 1.6;
+  }
+  .checklist ol.steps li:last-child { border-bottom: none; padding-bottom: 4px; }
+  .checklist ol.steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0; top: 8px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: #fdfcf8;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 0.92rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .checklist ol.steps li strong { color: var(--navy); }
+
+  /* 行前准备清单：真实可点击的复选框，打印时也能看到清晰的方框（手写打勾用） */
+  .checklist-items {
+    list-style: none;
+    padding: 0;
+    margin: 14px 0;
+  }
+  .checklist-items li {
+    border-bottom: 1px dashed var(--line);
+  }
+  .checklist-items li:last-child { border-bottom: none; }
+  .checklist-items label {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    padding: 11px 2px;
+    cursor: pointer;
+  }
+  .checklist-items input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 25px;
+    height: 25px;
+    flex: 0 0 25px;
+    margin-top: 1px;
+    border: 2px solid var(--teal);
+    border-radius: 6px;
+    position: relative;
+    cursor: pointer;
+    background: var(--card);
+  }
+  .checklist-items input[type="checkbox"]:checked {
+    background: var(--teal);
+  }
+  .checklist-items input[type="checkbox"]:checked::after {
+    content: "✓";
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -52%);
+    color: #fdfcf8;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .checklist-items label span { line-height: 1.5; padding-top: 2px; }
+  .checklist-items label:has(input:checked) span {
+    color: var(--ink-soft);
+    text-decoration: line-through;
+  }
+  .checklist-note { color: var(--ink-soft); font-size: 0.88rem; margin: 0 0 4px; }
+
+  .disclaimer {
+    color: var(--ink-soft);
+    font-size: 0.96rem;
+    border-top: 1px dashed var(--line);
+    margin-top: 24px;
+    padding-top: 16px;
+  }
+  .disclaimer p { margin: 8px 0; }
+
+  footer.foot {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 0.84rem;
+    padding: 24px 18px 40px;
+    font-family: var(--mono);
+  }
+
+  @media print {
+    nav.tabs, .action-bar { display: none; }
+    header.cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    section.tab-content { display: block !important; }
+    section.tab-content + section.tab-content { page-break-before: always; }
+    .day-card.collapsed .timeline,
+    .day-card.collapsed .day-total { display: block !important; }
+    .day-card h3::after { content: ""; }
+    .item-actions a.mini-action { background: none; border: none; padding: 0; text-decoration: underline; margin-right: 12px; }
+    .cta-button { display: none; }
+    .checklist-items input[type="checkbox"] { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    /* 只对真正应该保持完整的小单元避免分页内断裂，不对整页/整个标签页这种远超一页高度的
+       大容器设avoid——后者会导致浏览器打印引擎把内容硬挤进一页，造成文字和模块重叠粘连，
+       这是之前版本"行程规划部分文字模块粘在一起"问题的根因。 */
+    ol.timeline li { break-inside: avoid; page-break-inside: avoid; }
+    .place-card, .stat, .field, .budget-table tr { break-inside: avoid; page-break-inside: avoid; }
+    .day-card .stub { break-inside: avoid; page-break-inside: avoid; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .day-card { transition: box-shadow 0.15s ease; }
+  }
+
+  /* ---------- Google 无 API 懒加载地图 ---------- */
+  .google-lazy-map {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 5px rgba(22,35,46,.08);
+    margin-bottom: 20px;
+  }
+  .gmap-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .gmap-head strong { display: block; color: var(--ink); }
+  .gmap-head span { display: block; margin-top: 3px; color: var(--ink-soft); font-size: .88rem; }
+  .gmap-head a,
+  .gmap-route-actions a,
+  .gmap-route-actions button,
+  .gmap-placeholder-inner button {
+    border: 1px solid var(--teal-soft);
+    background: var(--teal-soft);
+    color: var(--teal);
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 7px 12px;
+    cursor: pointer;
+    font-size: .88rem;
+    font-weight: 700;
+    font-family: inherit;
+  }
+  .gmap-day-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(253,252,248,.74);
+  }
+  .gmap-day-btn {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 7px 10px;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    color: var(--ink);
+  }
+  .gmap-day-btn strong { color: var(--navy); }
+  .gmap-day-btn span { color: var(--ink-soft); font-size: .82rem; }
+  .gmap-day-btn.active { background: var(--teal-soft); border-color: rgba(31,111,100,.28); }
+  .gmap-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, .8fr);
+    gap: 0;
+  }
+  .gmap-placeholder {
+    min-height: 430px;
+    display: grid;
+    place-items: center;
+    padding: 22px;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(31,111,100,.12), transparent 26%),
+      radial-gradient(circle at 80% 40%, rgba(41,128,185,.12), transparent 25%),
+      linear-gradient(135deg, #f8fbff, var(--paper));
+  }
+  .gmap-placeholder-inner {
+    max-width: 520px;
+    text-align: center;
+    background: rgba(255,255,255,.88);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 6px 18px rgba(22,35,46,.07);
+  }
+  .gmap-placeholder-inner h3 { margin: 0 0 8px; }
+  .gmap-placeholder-inner p { color: var(--ink-soft); line-height: 1.7; margin-bottom: 14px; }
+  .gmap-frame-wrap iframe {
+    display: block;
+    width: 100%;
+    min-height: 520px;
+    border: 0;
+    background: #e5e7eb;
+  }
+  .gmap-frame-fallback {
+    padding: 9px 12px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: .86rem;
+    background: #fff;
+  }
+  .gmap-frame-fallback a { color: var(--teal); font-weight: 700; }
+  .gmap-side {
+    border-left: 1px solid var(--line);
+    padding: 12px;
+    background: #fff;
+    max-height: 590px;
+    overflow: auto;
+  }
+  .gmap-route-card { display: none; }
+  .gmap-route-card.active { display: block; }
+  .gmap-route-card h4 { margin: 0 0 8px; }
+  .gmap-route-summary { color: var(--ink-soft); line-height: 1.6; margin: 0 0 10px; }
+  .gmap-place-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .gmap-place-list li {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px;
+    background: var(--paper);
+  }
+  .gmap-pin {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--navy);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: .8rem;
+    flex: 0 0 auto;
+  }
+  .gmap-place-list strong { display: block; }
+  .gmap-place-list small,
+  .gmap-place-list em {
+    display: inline-block;
+    margin-right: 6px;
+    color: var(--ink-soft);
+    font-size: .78rem;
+    font-style: normal;
+  }
+  .gmap-route-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .gmap-embed-note {
+    margin-top: 10px;
+    color: var(--ink-soft);
+    font-size: .82rem;
+    line-height: 1.6;
+  }
+  @media (max-width: 820px) {
+    .gmap-layout { grid-template-columns: 1fr; }
+    .gmap-side { border-left: 0; border-top: 1px solid var(--line); max-height: none; }
+    .gmap-frame-wrap iframe { min-height: 440px; }
+  }
+
+
+  /* ---------- v13：回到第一版 Google 搜索地图样式 ---------- */
+  .google-lazy-map {
+    border-radius: 18px;
+    box-shadow: 0 8px 26px rgba(15,23,42,.08);
+  }
+  .gmap-placeholder {
+    min-height: 420px;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(37,99,235,.16), transparent 26%),
+      radial-gradient(circle at 80% 40%, rgba(31,111,100,.15), transparent 25%),
+      linear-gradient(135deg,#f8fbff,#f5f4ef);
+  }
+  .gmap-placeholder-inner h3 {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+  .gmap-placeholder-inner button,
+  .gmap-route-actions button {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+  }
+  .gmap-head a,
+  .gmap-route-actions a {
+    background: #eef8f6;
+    border-color: #b9ddd6;
+    color: var(--teal);
+  }
+  .gmap-day-btn.active {
+    background: #eef4ff;
+    border-color: #b7c9ff;
+  }
+  .gmap-frame-wrap iframe {
+    min-height: 520px;
+  }
+
+
+  /* ---------- v18：Leaflet + Esri/ArcGIS 全 marker 地图 ---------- */
+  .leaflet-esri-map {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 8px 26px rgba(15,23,42,.08);
+    margin-bottom: 20px;
+  }
+  .leaflet-map-head {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #fff;
+  }
+  .leaflet-map-head strong { display: block; font-size: 16px; color: var(--ink); }
+  .leaflet-map-head span { display: block; color: var(--ink-soft); font-size: .86rem; margin-top: 2px; }
+  .leaflet-map-head a {
+    color: var(--teal);
+    background: var(--teal-soft);
+    border: 1px solid rgba(31,111,100,.25);
+    border-radius: 999px;
+    padding: 8px 13px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .leaflet-day-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(253,252,248,.74);
+  }
+  .leaflet-day-tab {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .leaflet-day-tab strong { color: var(--navy); }
+  .leaflet-day-tab span {
+    max-width: 190px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--ink-soft);
+    font-size: .82rem;
+  }
+  .leaflet-day-tab.active {
+    background: #eef4ff;
+    border-color: #b7c9ff;
+  }
+  .leaflet-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.9fr) minmax(300px, .62fr);
+  }
+  .leaflet-map-area {
+    background: #fff;
+    padding: 14px;
+  }
+  .leaflet-title-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .leaflet-title-row strong { font-size: 1rem; }
+  .leaflet-title-row span { color: var(--ink-soft); font-size: .86rem; }
+  .trip-leaflet-map {
+    height: 820px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #e5e7eb;
+  }
+  .leaflet-pin-marker {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 10px rgba(15,23,42,.28);
+    font-size: 11px;
+  }
+  .leaflet-map-side {
+    border-left: 1px solid var(--line);
+    background: #fff;
+    padding: 14px;
+    max-height: 900px;
+    overflow: auto;
+  }
+  .leaflet-map-side h4 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+  }
+  .leaflet-place-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 9px;
+  }
+  .leaflet-place-list li {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 9px;
+    background: #fbfcfd;
+    cursor: pointer;
+  }
+  .leaflet-place-list li:hover {
+    border-color: #b7c9ff;
+    background: #f8fbff;
+  }
+  .leaflet-list-pin {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    flex: 0 0 auto;
+    font-size: 11px;
+  }
+  .leaflet-place-list strong { display: block; font-size: .9rem; }
+  .leaflet-place-list small { display: block; margin-top: 2px; color: var(--ink-soft); }
+  .leaflet-place-list em { font-style: normal; color: #2563eb; font-weight: 700; margin-right: 6px; }
+  .leaflet-map-warning {
+    margin-top: 8px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 9px 10px;
+    color: var(--ink-soft);
+    background: #fff;
+    font-size: .84rem;
+  }
+  @media (max-width: 900px) {
+    .leaflet-layout { grid-template-columns: 1fr; }
+    .leaflet-map-side { border-left: 0; border-top: 1px solid var(--line); max-height: none; }
+    .trip-leaflet-map { height: 620px; }
+  }
+
+
+  /* ---------- v19：图鉴 搜索 搜索兜底 ---------- */
+  .gallery-notice {
+    border: 1px dashed var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin: 0 0 14px;
+    background: #fff;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    font-size: .9rem;
+  }
+  .gallery-search-placeholder {
+    min-height: 210px;
+    padding: 16px;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 8px;
+    text-align: center;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(37,99,235,.14), transparent 26%),
+      radial-gradient(circle at 80% 70%, rgba(31,111,100,.12), transparent 28%),
+      #f8fafc;
+    color: var(--ink-soft);
+  }
+  .gallery-placeholder-icon {
+    font-size: 2rem;
+  }
+  .gallery-search-placeholder strong {
+    color: var(--ink);
+  }
+  .gallery-search-placeholder span {
+    font-size: .84rem;
+    line-height: 1.55;
+  }
+  .gallery-search-placeholder code,
+  .place-review-missing code {
+    font-family: var(--mono);
+    background: rgba(22,35,46,.06);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 1px 5px;
+  }
+  .gallery-search-actions,
+  .gallery-mini-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .gallery-search-actions a,
+  .gallery-mini-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(31,111,100,.25);
+    background: var(--teal-soft);
+    color: var(--teal);
+    padding: 7px 10px;
+    font-size: .82rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .place-rating-missing {
+    display: grid;
+    gap: 6px;
+    color: var(--ink-soft);
+  }
+  .place-review-missing {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px;
+    background: #fbfcfd;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+  .place-review-missing strong {
+    display: block;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .place-review-missing p {
+    margin: 0;
+    font-size: .86rem;
+    line-height: 1.6;
+  }
+  .place-photo-caption {
+    font-size: .76rem;
+    color: var(--ink-soft);
+    padding: 6px 8px;
+    border-top: 1px solid var(--line);
+    background: #fff;
+  }
+
+
+  /* ---------- v19：图片缩略图兜底 ---------- */
+  .place-photo-fallback {
+    position: relative;
+    min-height: 210px;
+    background: #f8fafc;
+  }
+  .place-photo-fallback .place-photo {
+    display: block;
+  }
+  .place-photo-fallback .gallery-search-placeholder {
+    display: none;
+  }
+  .place-photo-fallback.image-failed .place-photo {
+    display: none;
+  }
+  .place-photo-fallback.image-failed .gallery-search-placeholder {
+    display: grid;
+  }
+  .gallery-search-overlay {
+    position: absolute;
+    left: 10px;
+    bottom: 34px;
+    z-index: 2;
+  }
+  .gallery-search-overlay a {
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(6px);
+  }
+
+
+  /* ---------- v20：地图放大 + 图鉴按钮精简 ---------- */
+  .leaflet-layout {
+    grid-template-columns: minmax(0, 1.9fr) minmax(300px, .62fr);
+  }
+  .trip-leaflet-map {
+    height: 820px;
+  }
+  .leaflet-map-side {
+    max-height: 900px;
+  }
+  .gallery-search-overlay {
+    display: none !important;
+  }
+  .place-rating-missing .gallery-mini-actions a,
+  .place-review-missing .gallery-mini-actions a {
+    background: #fff7ed;
+    color: #9a3412;
+    border-color: #fed7aa;
+  }
+  @media (max-width: 900px) {
+    .trip-leaflet-map {
+      height: 620px;
+    }
+  }
+
+
+  /* ---------- v21：在线地图加大、贴合、去按钮 ---------- */
+  .leaflet-esri-map {
+    border-radius: 16px;
+  }
+  .leaflet-layout {
+    grid-template-columns: minmax(0, 2.35fr) minmax(250px, .48fr) !important;
+  }
+  .leaflet-map-area {
+    padding: 6px !important;
+  }
+  .leaflet-title-row {
+    margin: 4px 6px 6px !important;
+  }
+  .trip-leaflet-map {
+    height: min(980px, 84vh) !important;
+    min-height: 840px;
+    border-radius: 10px !important;
+  }
+  .leaflet-map-side {
+    max-height: min(980px, 84vh) !important;
+    padding: 10px !important;
+  }
+  .leaflet-place-list {
+    gap: 7px !important;
+  }
+  .leaflet-place-list li {
+    padding: 7px !important;
+  }
+  .gallery-mini-actions {
+    display: none !important;
+  }
+  .place-rating-missing small {
+    display: block;
+    margin-top: 4px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+    font-size: .82rem;
+  }
+  @media (max-width: 900px) {
+    .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+    .trip-leaflet-map {
+      height: 72vh !important;
+      min-height: 640px;
+    }
+    .leaflet-map-side {
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v22：修复隐藏标签页地图瓦片 + 真正放大地图 ---------- */
+  main {
+    max-width: 1480px !important;
+  }
+  #itinerary.tab-content {
+    max-width: 1480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #itinerary .leaflet-esri-map {
+    width: calc(100vw - 36px);
+    max-width: 1480px;
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+  #itinerary .leaflet-layout {
+    grid-template-columns: minmax(0, 2.75fr) minmax(240px, .42fr) !important;
+  }
+  #itinerary .leaflet-map-area {
+    padding: 4px !important;
+  }
+  #itinerary .trip-leaflet-map {
+    width: 100% !important;
+    height: min(1040px, 86vh) !important;
+    min-height: 860px !important;
+  }
+  #itinerary .leaflet-map-side {
+    max-height: min(1040px, 86vh) !important;
+    padding: 8px !important;
+  }
+  @media (max-width: 900px) {
+    #itinerary .leaflet-esri-map {
+      width: calc(100vw - 18px);
+    }
+    #itinerary .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+    #itinerary .trip-leaflet-map {
+      height: 74vh !important;
+      min-height: 640px !important;
+    }
+    #itinerary .leaflet-map-side {
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v23：地图布局硬修复，去掉左右空白 ---------- */
+  section#itinerary.tab-content {
+    width: 100% !important;
+  }
+  #itinerary .leaflet-esri-map {
+    width: calc(100vw - 8px) !important;
+    max-width: none !important;
+    margin-left: 50% !important;
+    transform: translateX(-50%) !important;
+    border-radius: 12px !important;
+  }
+  #itinerary .leaflet-layout {
+    grid-template-columns: minmax(0, 3.2fr) minmax(220px, .38fr) !important;
+    width: 100% !important;
+  }
+  #itinerary .leaflet-map-area {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 2px !important;
+    display: block !important;
+  }
+  #itinerary .leaflet-title-row {
+    margin: 6px 8px 8px !important;
+  }
+  #itinerary .trip-leaflet-map {
+    width: 100% !important;
+    max-width: none !important;
+    height: min(1080px, 88vh) !important;
+    min-height: 880px !important;
+    border-radius: 8px !important;
+  }
+  #itinerary .leaflet-map-side {
+    max-height: min(1080px, 88vh) !important;
+    padding: 8px !important;
+  }
+  @media (max-width: 900px) {
+    #itinerary .leaflet-esri-map {
+      width: calc(100vw - 4px) !important;
+    }
+    #itinerary .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+    #itinerary .trip-leaflet-map {
+      height: 76vh !important;
+      min-height: 660px !important;
+    }
+    #itinerary .leaflet-map-side {
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v24：地图左右留白舒适化 ---------- */
+  #itinerary .leaflet-esri-map {
+    width: calc(100vw - 72px) !important;
+    max-width: 1360px !important;
+    margin-left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+  #itinerary .leaflet-layout {
+    grid-template-columns: minmax(0, 2.85fr) minmax(260px, .48fr) !important;
+  }
+  #itinerary .leaflet-map-area {
+    padding: 8px !important;
+  }
+  #itinerary .trip-leaflet-map {
+    height: min(1000px, 84vh) !important;
+    min-height: 820px !important;
+  }
+  #itinerary .leaflet-map-side {
+    max-height: min(1000px, 84vh) !important;
+  }
+  @media (max-width: 900px) {
+    #itinerary .leaflet-esri-map {
+      width: calc(100vw - 24px) !important;
+      max-width: none !important;
+    }
+    #itinerary .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+    #itinerary .trip-leaflet-map {
+      height: 72vh !important;
+      min-height: 620px !important;
+    }
+  }
+
+
+  /* ---------- v25：大边距地图版 ---------- */
+  #itinerary .leaflet-esri-map {
+    width: min(1180px, calc(100vw - 160px)) !important;
+    max-width: 1180px !important;
+    margin-left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+  #itinerary .leaflet-layout {
+    grid-template-columns: minmax(0, 2.45fr) minmax(280px, .62fr) !important;
+  }
+  #itinerary .leaflet-map-area {
+    padding: 10px !important;
+  }
+  #itinerary .trip-leaflet-map {
+    height: min(920px, 80vh) !important;
+    min-height: 760px !important;
+  }
+  #itinerary .leaflet-map-side {
+    max-height: min(920px, 80vh) !important;
+  }
+  @media (max-width: 1100px) {
+    #itinerary .leaflet-esri-map {
+      width: calc(100vw - 80px) !important;
+      max-width: none !important;
+    }
+  }
+  @media (max-width: 900px) {
+    #itinerary .leaflet-esri-map {
+      width: calc(100vw - 32px) !important;
+      max-width: none !important;
+    }
+    #itinerary .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+    #itinerary .trip-leaflet-map {
+      height: 70vh !important;
+      min-height: 600px !important;
+    }
+    #itinerary .leaflet-map-side {
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v26：全站统一大边距系统 ---------- */
+  :root {
+    --page-max: 1180px;
+    --page-gutter: clamp(56px, 8vw, 150px);
+    --page-width: min(var(--page-max), calc(100vw - var(--page-gutter) - var(--page-gutter)));
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  header.cover,
+  .action-bar,
+  nav.tabs,
+  main,
+  footer.foot {
+    width: var(--page-width) !important;
+    max-width: var(--page-max) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  header.cover {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .action-bar,
+  nav.tabs {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  main {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: var(--page-max) !important;
+  }
+
+  section.tab-content {
+    width: 100% !important;
+  }
+
+  #itinerary.tab-content {
+    max-width: none !important;
+  }
+
+  #itinerary .leaflet-esri-map {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    transform: none !important;
+  }
+
+  #itinerary .leaflet-layout {
+    grid-template-columns: minmax(0, 2.55fr) minmax(280px, .58fr) !important;
+    width: 100% !important;
+  }
+
+  #itinerary .leaflet-map-area {
+    padding: 10px !important;
+  }
+
+  #itinerary .trip-leaflet-map {
+    width: 100% !important;
+    height: min(920px, 80vh) !important;
+    min-height: 760px !important;
+  }
+
+  #itinerary .leaflet-map-side {
+    max-height: min(920px, 80vh) !important;
+  }
+
+  .places-gallery,
+  .overview-grid,
+  .weather-card,
+  .checklist,
+  .budget-table,
+  .disclaimer,
+  .gallery-notice,
+  .day-card,
+  .add-all-calendar {
+    max-width: 100% !important;
+  }
+
+  @media (max-width: 900px) {
+    :root {
+      --page-gutter: clamp(18px, 4.5vw, 32px);
+    }
+
+    #itinerary .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+
+    #itinerary .trip-leaflet-map {
+      height: 70vh !important;
+      min-height: 600px !important;
+    }
+
+    #itinerary .leaflet-map-side {
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v27：顶部封面横幅满宽 ---------- */
+  header.cover {
+    width: 100vw !important;
+    max-width: none !important;
+    margin-left: 50% !important;
+    margin-right: 0 !important;
+    transform: translateX(-50%) !important;
+    padding-left: max(var(--page-gutter), calc((100vw - var(--page-max)) / 2)) !important;
+    padding-right: max(var(--page-gutter), calc((100vw - var(--page-max)) / 2)) !important;
+  }
+
+  header.cover .field-row,
+  header.cover h1,
+  header.cover .kicker {
+    max-width: var(--page-max);
+  }
+
+  @media (max-width: 900px) {
+    header.cover {
+      padding-left: var(--page-gutter) !important;
+      padding-right: var(--page-gutter) !important;
+    }
+  }
+
+
+  /* ---------- v28：打印 PDF 横幅满宽 + 图鉴去图片说明 ---------- */
+  .action-bar {
+    width: 100vw !important;
+    max-width: none !important;
+    margin-left: 50% !important;
+    margin-right: 0 !important;
+    transform: translateX(-50%) !important;
+    padding: 14px max(var(--page-gutter), calc((100vw - var(--page-max)) / 2)) !important;
+    background: var(--navy) !important;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+  }
+
+  .action-bar .action-btn.primary {
+    background: var(--amber) !important;
+    color: #fff !important;
+    border: 1px solid rgba(255,255,255,.35) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,.18);
+    min-height: 42px;
+    padding: 10px 16px;
+  }
+
+  .place-photo-fallback .place-photo-caption {
+    display: none !important;
+  }
+
+  @media (max-width: 900px) {
+    .action-bar {
+      padding-left: var(--page-gutter) !important;
+      padding-right: var(--page-gutter) !important;
+      justify-content: center !important;
+    }
+    .action-bar .action-btn.primary {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+
+  /* ---------- v29：统一高级横幅色 + 地图右侧列表等高 ---------- */
+  :root {
+    --hero-bg: linear-gradient(135deg, #14293d 0%, #1d4057 46%, #285f68 100%);
+    --hero-border: rgba(255,255,255,.16);
+    --hero-shadow: 0 18px 42px rgba(13, 32, 48, .18);
+    --premium-accent: #c9a96a;
+    --premium-accent-dark: #9b7a34;
+  }
+
+  header.cover,
+  .action-bar {
+    background: var(--hero-bg) !important;
+    color: #f7fbff !important;
+    box-shadow: var(--hero-shadow);
+  }
+
+  header.cover {
+    border-bottom: 1px solid var(--hero-border) !important;
+  }
+
+  header.cover .kicker,
+  header.cover h1,
+  header.cover .field-row,
+  header.cover .field-row span {
+    color: #f7fbff !important;
+  }
+
+  header.cover .kicker {
+    letter-spacing: .16em;
+    opacity: .82;
+  }
+
+  header.cover .field-row span {
+    background: rgba(255,255,255,.10) !important;
+    border: 1px solid rgba(255,255,255,.18) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .action-bar {
+    border-top: 1px solid rgba(255,255,255,.08) !important;
+    border-bottom: 1px solid rgba(255,255,255,.14) !important;
+    box-shadow: 0 12px 28px rgba(13, 32, 48, .13);
+  }
+
+  .action-bar .action-btn.primary {
+    background: linear-gradient(135deg, var(--premium-accent) 0%, var(--premium-accent-dark) 100%) !important;
+    border: 1px solid rgba(255,255,255,.38) !important;
+    color: #fffaf0 !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,.20);
+  }
+
+  .action-bar .action-btn.primary:hover {
+    filter: brightness(1.04);
+    transform: translateY(-1px);
+  }
+
+  #itinerary .leaflet-layout {
+    align-items: stretch !important;
+  }
+
+  #itinerary .trip-leaflet-map,
+  #itinerary .leaflet-map-side {
+    height: min(920px, 80vh) !important;
+    min-height: 760px !important;
+    max-height: min(920px, 80vh) !important;
+    box-sizing: border-box !important;
+  }
+
+  #itinerary .leaflet-map-side {
+    align-self: stretch !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    background: #fff !important;
+  }
+
+  #itinerary .leaflet-place-list {
+    flex: 1 1 auto !important;
+    align-content: flex-start !important;
+  }
+
+  @media (max-width: 900px) {
+    #itinerary .trip-leaflet-map {
+      height: 70vh !important;
+      min-height: 600px !important;
+      max-height: none !important;
+    }
+
+    #itinerary .leaflet-map-side {
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v30：商务深蓝横幅 + 地图右侧列表完全贴底 ---------- */
+  :root {
+    --hero-bg: linear-gradient(135deg, #071523 0%, #0b2236 48%, #12384d 100%) !important;
+    --hero-border: rgba(255,255,255,.10) !important;
+    --hero-shadow: 0 18px 44px rgba(3, 12, 24, .24) !important;
+    --premium-accent: #b99a58 !important;
+    --premium-accent-dark: #80642a !important;
+  }
+
+  header.cover,
+  .action-bar {
+    background: var(--hero-bg) !important;
+    box-shadow: var(--hero-shadow) !important;
+  }
+
+  header.cover .field-row span {
+    background: rgba(255,255,255,.075) !important;
+    border-color: rgba(255,255,255,.14) !important;
+  }
+
+  .action-bar .action-btn.primary {
+    background: linear-gradient(135deg, #b99a58 0%, #80642a 100%) !important;
+    color: #fff8e8 !important;
+    border-color: rgba(255,255,255,.30) !important;
+  }
+
+  #itinerary .leaflet-layout {
+    align-items: stretch !important;
+    grid-auto-rows: 1fr !important;
+  }
+
+  #itinerary .leaflet-map-area,
+  #itinerary .leaflet-map-side {
+    height: min(920px, 80vh) !important;
+    min-height: 760px !important;
+    max-height: min(920px, 80vh) !important;
+    box-sizing: border-box !important;
+  }
+
+  #itinerary .leaflet-map-area {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  #itinerary .trip-leaflet-map {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  #itinerary .leaflet-map-side {
+    align-self: stretch !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    padding: 8px !important;
+    background: #fff !important;
+  }
+
+  #itinerary .leaflet-place-list {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    padding-bottom: 8px !important;
+    align-content: stretch !important;
+  }
+
+  #itinerary .leaflet-place-list li:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  @media (max-width: 900px) {
+    #itinerary .leaflet-map-area,
+    #itinerary .leaflet-map-side {
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+    }
+
+    #itinerary .trip-leaflet-map {
+      height: 70vh !important;
+      min-height: 600px !important;
+    }
+
+    #itinerary .leaflet-place-list {
+      height: auto !important;
+      overflow-y: visible !important;
+    }
+  }
+
+
+  /* ---------- v31：去除页面左右灰色渐变/阴影 ---------- */
+  :root {
+    --hero-shadow: none !important;
+  }
+
+  html,
+  body {
+    background: var(--paper) !important;
+    background-image: none !important;
+  }
+
+  body::before,
+  body::after,
+  header.cover::before,
+  header.cover::after,
+  .action-bar::before,
+  .action-bar::after,
+  nav.tabs::before,
+  nav.tabs::after {
+    content: none !important;
+    display: none !important;
+    background: none !important;
+    box-shadow: none !important;
+  }
+
+  header.cover,
+  .action-bar,
+  nav.tabs {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  header.cover {
+    background-image: var(--hero-bg) !important;
+  }
+
+  .action-bar {
+    background-image: var(--hero-bg) !important;
+  }
+
+  nav.tabs {
+    background: var(--paper) !important;
+  }
+
+  main,
+  footer.foot {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+
+  /* ---------- v32：顶部目录导航居中排列 ---------- */
+  nav.tabs {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 0 !important;
+  }
+
+  nav.tabs .tab-scroll,
+  nav.tabs .tabs-inner,
+  nav.tabs .tabs-wrap {
+    width: 100%;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  nav.tabs button {
+    flex: 0 0 auto !important;
+  }
+
+  @media (max-width: 900px) {
+    nav.tabs {
+      justify-content: flex-start !important;
+    }
+
+    nav.tabs .tab-scroll,
+    nav.tabs .tabs-inner,
+    nav.tabs .tabs-wrap {
+      justify-content: flex-start !important;
+    }
+  }
+
+
+  /* ---------- v33：目录按钮组结构化居中 ---------- */
+  nav.tabs {
+    width: 100vw !important;
+    max-width: none !important;
+    margin-left: 50% !important;
+    margin-right: 0 !important;
+    transform: translateX(-50%) !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    display: block !important;
+    overflow-x: visible !important;
+    background: var(--paper) !important;
+  }
+
+  nav.tabs .tabs-inner {
+    width: var(--page-width) !important;
+    max-width: var(--page-max) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-end !important;
+    flex-wrap: wrap !important;
+    gap: 0 !important;
+    overflow-x: visible !important;
+    border-bottom: 1px solid var(--line);
+    padding-top: 10px;
+  }
+
+  nav.tabs button {
+    flex: 0 0 auto !important;
+  }
+
+  @media (max-width: 900px) {
+    nav.tabs {
+      overflow-x: auto !important;
+    }
+
+    nav.tabs .tabs-inner {
+      width: max-content !important;
+      min-width: calc(100vw - 2 * var(--page-gutter)) !important;
+      justify-content: flex-start !important;
+      flex-wrap: nowrap !important;
+      padding-left: var(--page-gutter) !important;
+      padding-right: var(--page-gutter) !important;
+    }
+  }
+
+</style>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<header class="cover">
+  <div class="kicker">TRAVEL ITINERARY</div>
+  <h1>香港 → 冰岛 7日环岛行程方案</h1>
+  <div class="field-row">
+    <div class="field"><div class="k">Route</div><div class="v">香港 → 冰岛（环岛）</div></div>
+<div class="field"><div class="k">Dates</div><div class="v">08.01–08.07</div></div>
+<div class="field"><div class="k">Pax</div><div class="v">2人</div></div>
+<div class="field"><div class="k">Budget</div><div class="v">经济优先</div></div>
+  </div>
+</header>
+
+<div class="action-bar">
+  <button class="action-btn primary" onclick="window.print()">🖨️ 打印 / 导出 PDF</button>
+</div>
+
+<nav class="tabs">
+  <div class="tabs-inner">
+  <button class="tab-btn active" data-target="overview">概览</button>
+  <button class="tab-btn" data-target="checklist">行前准备</button>
+  <button class="tab-btn" data-target="itinerary">逐日行程</button>
+  <button class="tab-btn" data-target="gallery">地点图鉴</button>
+  <button class="tab-btn" data-target="budget">预算</button>
+  <button class="tab-btn" data-target="visa">签证与证件</button>
+  <button class="tab-btn" data-target="customs">当地须知</button>
+  <button class="tab-btn" data-target="local-needs">本地特殊需求</button>
+  <button class="tab-btn" data-target="notes">注意事项</button>
+  </div>
+</nav>
+
+<main>
+
+  <section id="overview" class="tab-content active">
+    <h2>行程概览</h2>
+    <div class="overview-grid">
+  <div class="stat"><div class="label">总天数</div><div class="value">7 天</div></div>
+  <div class="stat"><div class="label">出行人数</div><div class="value">2 人</div></div>
+  <div class="stat accent"><div class="label">总预算</div><div class="value">¥32080</div></div>
+  <div class="stat accent"><div class="label">人均预算</div><div class="value">¥16040</div></div>
+</div>
+<p>香港出发，芬兰航空经赫尔辛基转机往返雷克雅未克，全程7天5晚自驾环岛。从黄金圈到南岸瀑布群，从杰古沙龙冰河湖到北部地热区，覆盖冰岛最精华的自然景观。预订渠道优先参考携程。</p>
+    <div class="weather-card">
+      <h4>🌤️ 出行天气参考（8月上旬气候特征）</h4>
+<div class="weather-row">
+  <div class="weather-day"><div class="d">南部 8/2-4</div><div class="t">11-14℃ 阵雨为主</div></div>
+  <div class="weather-day"><div class="d">北部 8/5-6</div><div class="t">9-12℃ 较凉爽</div></div>
+</div>
+<p class="weather-tip">以下为8月上旬冰岛历史气候参考，并非精确预报，临近出发请通过 vedur.is 查询实时预报。日均日照约17-18小时，风大体感低5℃，建议洋葱式叠穿：冲锋衣+抓绒+速干内衣。泳衣带上，米湖温泉用。</p>
+    </div>
+  </section>
+
+  <section id="checklist" class="tab-content">
+    <h2>行前准备清单</h2>
+    <p class="lede">点一下方框就能打勾，提醒自己哪些事已经办好了；打印出来也能直接用笔手动打勾。</p>
+    <div class="checklist" data-stamp="TO-DO · 出发前">
+      <ul class="checklist-items">
+        <ul class="checklist-items">
+<h4>🔴 紧急（立即办理）</h4>
+<ul class="checklist-items">
+<li><label><input type="checkbox"><span><strong>申根签证</strong>：VFS Global官网预约递签，准备全部材料</span></label></li>
+<li><label><input type="checkbox"><span><strong>驾照英文公证 + 海牙认证</strong>（约3-7工作日+3-5工作日，¥200-300）</span></label></li>
+</ul>
+<h4>🟡 重要（出发前1-2个月）</h4>
+<ul class="checklist-items">
+<li><label><input type="checkbox"><span><strong>订机票</strong>：携程订芬兰航空 HKG→HEL→KEF 往返</span></label></li>
+<li><label><input type="checkbox"><span><strong>订住宿</strong>：携程逐个预订5晚青旅/民宿（选可免费取消的）</span></label></li>
+<li><label><input type="checkbox"><span><strong>订租车</strong>：携程预订自动挡经济型，6天+全额保险（GP碎石险必选）</span></label></li>
+<li><label><input type="checkbox"><span><strong>旅行保险</strong>：购买申根旅行医疗保险（保额≥3万欧元）</span></label></li>
+<li><label><input type="checkbox"><span><strong>信用卡</strong>：确保主驾驶名下有足够额度信用卡，向银行申请开通4位PIN码（加油必须）</span></label></li>
+<li><label><input type="checkbox"><span><strong>加油预付卡</strong>：备一张N1加油预付卡，以防信用卡加油机不识别</span></label></li>
+</ul>
+<h4>🟢 出发前1-2周</h4>
+<ul class="checklist-items">
+<li><label><input type="checkbox"><span><strong>出发前1周查询天气</strong>：vedur.is 查看冰岛实时预报，确认是否需要调整装备</span></label></li>
+<li><label><input type="checkbox"><span><strong>下载离线地图</strong>：Google Maps 下载冰岛离线地图（环岛部分路段无信号）</span></label></li>
+<li><label><input type="checkbox"><span><strong>下载必备App</strong>：road.is（路况）、vedur.is（天气）、112 Iceland（紧急求救）、Parka（停车缴费）</span></label></li>
+<li><label><input type="checkbox"><span><strong>打印/备份证件</strong>：护照复印件、签证复印件、驾照公证件、保险单、机票酒店预订单，各备一份电子版在手机</span></label></li>
+<li><label><input type="checkbox"><span><strong>换汇</strong>：少量冰岛克朗现金（几乎不用现金，但备¥500等值应急）</span></label></li>
+</ul>
+<h4>🎒 个人物品（用户特别提醒）</h4>
+<ul class="checklist-items">
+<li><label><input type="checkbox"><span><strong>哮喘药</strong>：处方吸入剂随身携带（不要托运），保留原包装+药店标签，带上英文医生说明信</span></label></li>
+<li><label><input type="checkbox"><span>常备药品：感冒药、肠胃药、晕车药、创可贴</span></label></li>
+</ul>
+<h4>👕 衣物装备（8月夏季）</h4>
+<ul class="checklist-items">
+<li><label><input type="checkbox"><span>防水防风冲锋衣（最重要单品）</span></label></li>
+<li><label><input type="checkbox"><span>保暖中层（抓绒/薄羽绒）</span></label></li>
+<li><label><input type="checkbox"><span>速干保暖内衣（贴身层，不要纯棉）</span></label></li>
+<li><label><input type="checkbox"><span>防水徒步鞋（中高帮最佳）</span></label></li>
+<li><label><input type="checkbox"><span>毛线帽+手套（大风天必备）</span></label></li>
+<li><label><input type="checkbox"><span>墨镜+防晒霜（18小时日照，紫外线不弱）</span></label></li>
+<li><label><input type="checkbox"><span>泳衣（米湖温泉用）</span></label></li>
+<li><label><input type="checkbox"><span>眼罩（18小时日照，睡觉需要）</span></label></li>
+<li><label><input type="checkbox"><span>速干毛巾（青旅不一定提供）</span></label></li>
+<li><label><input type="checkbox"><span>折叠雨伞（配合冲锋衣用）</span></label></li>
+</ul>
+<h4>📱 电子设备</h4>
+<ul class="checklist-items">
+<li><label><input type="checkbox"><span>欧标转换插头（冰岛用Type C/F圆孔两脚插头，230V/50Hz）</span></label></li>
+<li><label><input type="checkbox"><span>车载充电器+手机支架</span></label></li>
+<li><label><input type="checkbox"><span>充电宝</span></label></li>
+<li><label><input type="checkbox"><span>相机+备用电池（低温耗电快）</span></label></li>
+</ul>
+<h4>🍜 食品杂物</h4>
+<ul class="checklist-items">
+<li><label><input type="checkbox"><span>老干妈/火锅底料/酱油小包装（青旅自炊灵魂）</span></label></li>
+<li><label><input type="checkbox"><span>泡面/微波饭（应急口粮）</span></label></li>
+<li><label><input type="checkbox"><span>保温杯（冰岛自来水直接饮用）</span></label></li>
+<li><label><input type="checkbox"><span>环保购物袋（超市不免费提供塑料袋）</span></label></li>
+</ul>
+<h4>⚠️ 入境注意</h4>
+<ul class="checklist-items">
+<li><label><input type="checkbox"><span>不要带肉类零食（牛肉干、鸭脖等禁止入境）</span></label></li>
+<li><label><input type="checkbox"><span>哮喘药保留原包装+英文说明放随身行李</span></label></li>
+<li><label><input type="checkbox"><span>无需准备现金小费（冰岛无小费文化）</span></label></li>
+</ul>
+<h4>📋 出发当天</h4>
+<ul class="checklist-items">
+<li><label><input type="checkbox"><span>护照、签证、驾照公证件、信用卡 — 四样随身必带</span></label></li>
+<li><label><input type="checkbox"><span>手机已下载冰岛离线地图</span></label></li>
+<li><label><input type="checkbox"><span>租车预订确认单打印/截屏</span></label></li>
+<li><label><input type="checkbox"><span>所有住宿预订确认打印/截屏</span></label></li>
+<li><label><input type="checkbox"><span>通知银行信用卡将在冰岛使用（避免被误判盗刷）</span></label></li>
+</ul>
+      </ul>
+    </div>
+  </section>
+
+  <section id="itinerary" class="tab-content">
+    <h2>逐日时间轴</h2>
+    <p class="lede">点击每天的标题可以收起/展开；"🧭"是导航按钮，点开直接跳地图 App，下方附带该段路线图（如已配置在线地图）；"📅 加入日历"一键写入手机日历；"🎫"是预订平台入口。</p>
+    <section class="leaflet-esri-map" id="trip-map-wrap">
+  <div class="leaflet-map-head">
+    <div>
+      <strong id="leaflet-map-title">🗺 全部｜全行程地点</strong>
+      <span id="leaflet-map-subtitle">19 个地点 · marker 和路线由页面自己绘制</span>
+    </div>
+    <a id="leaflet-route-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=63.995043%2C-22.623864&amp;destination=63.968228%2C-22.587524&amp;travelmode=driving&amp;waypoints=63.936932%2C-20.993788%7C64.278608%2C-21.081941%7C64.313838%2C-20.29951%7C64.314452%2C-20.149556%7C63.43783%2C-19.060041%7C63.615457%2C-19.988169%7C63.532104%2C-19.511292%7C63.404426%2C-19.058799%7C64.251263%2C-15.209137%7C64.016455%2C-16.966458%7C64.078321%2C-16.227421%7C64.043791%2C-16.176337%7C65.681499%2C-18.090905%7C65.814351%2C-16.384491%7C65.647343%2C-16.825068%7C65.630395%2C-16.848336%7C65.682816%2C-17.550624" target="_blank" rel="noopener">新窗口打开路线</a>
+  </div>
+  <div class="leaflet-day-tabs">
+    <button class="leaflet-day-tab active" onclick="tripLeafletShowView(0)"><strong>全部</strong><span>19 个地点</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(1)"><strong>Day 1</strong><span>1 个地点 · 驾车</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(2)"><strong>Day 2</strong><span>4 个地点 · 驾车</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(3)"><strong>Day 3</strong><span>4 个地点 · 驾车</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(4)"><strong>Day 4</strong><span>4 个地点 · 驾车</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(5)"><strong>Day 5</strong><span>5 个地点 · 驾车</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(6)"><strong>Day 6</strong><span>1 个地点 · 驾车</span></button>
+  </div>
+  <div class="leaflet-layout">
+    <div class="leaflet-map-area">
+      <div class="leaflet-title-row">
+        <strong id="leaflet-current-title">全部｜全行程地点</strong>
+        <span id="leaflet-current-count">19 个地点</span>
+      </div>
+      <div id="trip-leaflet-map" class="trip-leaflet-map"></div>
+      <div id="leaflet-map-warning" class="leaflet-map-warning" hidden>地图底图加载失败时，marker 数据仍在右侧列表中；可点击“新窗口打开路线”。</div>
+    </div>
+    <aside class="leaflet-map-side">
+      <h4 id="leaflet-list-title">全部｜全行程地点</h4>
+      <ol id="leaflet-place-list" class="leaflet-place-list"></ol>
+    </aside>
+  </div>
+</section>
+<script>
+(function() {
+  var views = [{"key": "all", "label": "全部", "title": "全部｜全行程地点", "subtitle": "19 个地点", "places": [{"id": "p0", "day": 1, "order": 1, "time": "08:00", "label": "凯夫拉维克国际机场", "name": "Keflavik Airport", "cat": "长途交通", "lat": 63.995043, "lng": -22.623864, "color": "#2563eb"}, {"id": "p1", "day": 2, "order": 1, "time": "", "label": "Selfoss Hostel, Austurvegur 28, Selfoss", "name": "Selfoss Hostel Austurvegur 28", "cat": "住宿", "lat": 63.936932, "lng": -20.993788, "color": "#7c3aed"}, {"id": "p2", "day": 2, "order": 2, "time": "10:30", "label": "Thingvellir National Park", "name": "Thingvellir National Park", "cat": "门票/活动", "lat": 64.278608, "lng": -21.081941, "color": "#7c3aed"}, {"id": "p3", "day": 2, "order": 3, "time": "12:30", "label": "Geysir Hot Spring Area", "name": "Geysir Geothermal Area", "cat": "门票/活动", "lat": 64.313838, "lng": -20.29951, "color": "#7c3aed"}, {"id": "p4", "day": 2, "order": 4, "time": "13:30", "label": "Gullfoss Waterfall", "name": "Gullfoss", "cat": "门票/活动", "lat": 64.314452, "lng": -20.149556, "color": "#7c3aed"}, {"id": "p5", "day": 3, "order": 1, "time": "", "label": "The Barn, Norðurfoss, Vík", "name": "The Barn Norurfoss Vik", "cat": "住宿", "lat": 63.43783, "lng": -19.060041, "color": "#0f766e"}, {"id": "p6", "day": 3, "order": 2, "time": "09:30", "label": "Seljalandsfoss", "name": "Seljalandsfoss", "cat": "门票/活动", "lat": 63.615457, "lng": -19.988169, "color": "#0f766e"}, {"id": "p7", "day": 3, "order": 3, "time": "11:00", "label": "Skogafoss", "name": "Skogafoss", "cat": "门票/活动", "lat": 63.532104, "lng": -19.511292, "color": "#0f766e"}, {"id": "p8", "day": 3, "order": 4, "time": "13:30", "label": "Reynisfjara Black Sand Beach", "name": "Reynisfjara Beach", "cat": "门票/活动", "lat": 63.404426, "lng": -19.058799, "color": "#0f766e"}, {"id": "p9", "day": 4, "order": 1, "time": "", "label": "Old Airline Guesthouse, Hafnarbraut 24, Höfn", "name": "Old Airline Guesthouse Hafnarbraut 24 Hofn", "cat": "住宿", "lat": 64.251263, "lng": -15.209137, "color": "#d97706"}, {"id": "p10", "day": 4, "order": 2, "time": "10:00", "label": "Skaftafell, Vatnajokull National Park", "name": "Skaftafell", "cat": "门票/活动", "lat": 64.016455, "lng": -16.966458, "color": "#d97706"}, {"id": "p11", "day": 4, "order": 3, "time": "12:30", "label": "Jokulsarlon Glacier Lagoon", "name": "Jokulsarlon", "cat": "门票/活动", "lat": 64.078321, "lng": -16.227421, "color": "#d97706"}, {"id": "p12", "day": 4, "order": 4, "time": "13:30", "label": "Diamond Beach, Jokulsarlon", "name": "Diamond Beach", "cat": "门票/活动", "lat": 64.043791, "lng": -16.176337, "color": "#d97706"}, {"id": "p13", "day": 5, "order": 1, "time": "", "label": "Hafnarstræti Hostel, Hafnarstræti, Akureyri", "name": "Hafnarstraeti Hostel Akureyri", "cat": "住宿", "lat": 65.681499, "lng": -18.090905, "color": "#dc2626"}, {"id": "p14", "day": 5, "order": 2, "time": "13:00", "label": "Dettifoss, Vatnajokull National Park", "name": "Dettifoss", "cat": "门票/活动", "lat": 65.814351, "lng": -16.384491, "color": "#dc2626"}, {"id": "p15", "day": 5, "order": 3, "time": "14:30", "label": "Namaskard geothermal area, Myvatn", "name": "Namafjall Hverir", "cat": "门票/活动", "lat": 65.647343, "lng": -16.825068, "color": "#dc2626"}, {"id": "p16", "day": 5, "order": 4, "time": "15:30", "label": "Myvatn Nature Baths", "name": "Myvatn Nature Baths", "cat": "门票/活动", "lat": 65.630395, "lng": -16.848336, "color": "#dc2626"}, {"id": "p17", "day": 5, "order": 5, "time": "17:45", "label": "Godafoss Waterfall", "name": "Godafoss", "cat": "门票/活动", "lat": 65.682816, "lng": -17.550624, "color": "#dc2626"}, {"id": "p18", "day": 6, "order": 1, "time": "", "label": "Start Keflavík Airport Hostel, Keflavík", "name": "Start Keflavik Airport Hostel", "cat": "住宿", "lat": 63.968228, "lng": -22.587524, "color": "#0891b2"}], "route_url": "https://www.google.com/maps/dir/?api=1&origin=63.995043%2C-22.623864&destination=63.968228%2C-22.587524&travelmode=driving&waypoints=63.936932%2C-20.993788%7C64.278608%2C-21.081941%7C64.313838%2C-20.29951%7C64.314452%2C-20.149556%7C63.43783%2C-19.060041%7C63.615457%2C-19.988169%7C63.532104%2C-19.511292%7C63.404426%2C-19.058799%7C64.251263%2C-15.209137%7C64.016455%2C-16.966458%7C64.078321%2C-16.227421%7C64.043791%2C-16.176337%7C65.681499%2C-18.090905%7C65.814351%2C-16.384491%7C65.647343%2C-16.825068%7C65.630395%2C-16.848336%7C65.682816%2C-17.550624"}, {"key": "day1", "label": "Day 1", "title": "Day 1｜凯夫拉维克国际机场", "subtitle": "1 个地点 · 驾车", "places": [{"id": "p0", "day": 1, "order": 1, "time": "08:00", "label": "凯夫拉维克国际机场", "name": "Keflavik Airport", "cat": "长途交通", "lat": 63.995043, "lng": -22.623864, "color": "#2563eb"}], "route_url": "https://www.google.com/maps?q=63.995043%2C-22.623864"}, {"key": "day2", "label": "Day 2", "title": "Day 2｜Selfoss Hostel, Austurvegur 28, Selfoss", "subtitle": "4 个地点 · 驾车", "places": [{"id": "p1", "day": 2, "order": 1, "time": "", "label": "Selfoss Hostel, Austurvegur 28, Selfoss", "name": "Selfoss Hostel Austurvegur 28", "cat": "住宿", "lat": 63.936932, "lng": -20.993788, "color": "#7c3aed"}, {"id": "p2", "day": 2, "order": 2, "time": "10:30", "label": "Thingvellir National Park", "name": "Thingvellir National Park", "cat": "门票/活动", "lat": 64.278608, "lng": -21.081941, "color": "#7c3aed"}, {"id": "p3", "day": 2, "order": 3, "time": "12:30", "label": "Geysir Hot Spring Area", "name": "Geysir Geothermal Area", "cat": "门票/活动", "lat": 64.313838, "lng": -20.29951, "color": "#7c3aed"}, {"id": "p4", "day": 2, "order": 4, "time": "13:30", "label": "Gullfoss Waterfall", "name": "Gullfoss", "cat": "门票/活动", "lat": 64.314452, "lng": -20.149556, "color": "#7c3aed"}], "route_url": "https://www.google.com/maps/dir/?api=1&origin=63.936932%2C-20.993788&destination=64.314452%2C-20.149556&travelmode=driving&waypoints=64.278608%2C-21.081941%7C64.313838%2C-20.29951"}, {"key": "day3", "label": "Day 3", "title": "Day 3｜The Barn, Norðurfoss, Vík", "subtitle": "4 个地点 · 驾车", "places": [{"id": "p5", "day": 3, "order": 1, "time": "", "label": "The Barn, Norðurfoss, Vík", "name": "The Barn Norurfoss Vik", "cat": "住宿", "lat": 63.43783, "lng": -19.060041, "color": "#0f766e"}, {"id": "p6", "day": 3, "order": 2, "time": "09:30", "label": "Seljalandsfoss", "name": "Seljalandsfoss", "cat": "门票/活动", "lat": 63.615457, "lng": -19.988169, "color": "#0f766e"}, {"id": "p7", "day": 3, "order": 3, "time": "11:00", "label": "Skogafoss", "name": "Skogafoss", "cat": "门票/活动", "lat": 63.532104, "lng": -19.511292, "color": "#0f766e"}, {"id": "p8", "day": 3, "order": 4, "time": "13:30", "label": "Reynisfjara Black Sand Beach", "name": "Reynisfjara Beach", "cat": "门票/活动", "lat": 63.404426, "lng": -19.058799, "color": "#0f766e"}], "route_url": "https://www.google.com/maps/dir/?api=1&origin=63.43783%2C-19.060041&destination=63.404426%2C-19.058799&travelmode=driving&waypoints=63.615457%2C-19.988169%7C63.532104%2C-19.511292"}, {"key": "day4", "label": "Day 4", "title": "Day 4｜Old Airline Guesthouse, Hafnarbraut 24, Höfn", "subtitle": "4 个地点 · 驾车", "places": [{"id": "p9", "day": 4, "order": 1, "time": "", "label": "Old Airline Guesthouse, Hafnarbraut 24, Höfn", "name": "Old Airline Guesthouse Hafnarbraut 24 Hofn", "cat": "住宿", "lat": 64.251263, "lng": -15.209137, "color": "#d97706"}, {"id": "p10", "day": 4, "order": 2, "time": "10:00", "label": "Skaftafell, Vatnajokull National Park", "name": "Skaftafell", "cat": "门票/活动", "lat": 64.016455, "lng": -16.966458, "color": "#d97706"}, {"id": "p11", "day": 4, "order": 3, "time": "12:30", "label": "Jokulsarlon Glacier Lagoon", "name": "Jokulsarlon", "cat": "门票/活动", "lat": 64.078321, "lng": -16.227421, "color": "#d97706"}, {"id": "p12", "day": 4, "order": 4, "time": "13:30", "label": "Diamond Beach, Jokulsarlon", "name": "Diamond Beach", "cat": "门票/活动", "lat": 64.043791, "lng": -16.176337, "color": "#d97706"}], "route_url": "https://www.google.com/maps/dir/?api=1&origin=64.251263%2C-15.209137&destination=64.043791%2C-16.176337&travelmode=driving&waypoints=64.016455%2C-16.966458%7C64.078321%2C-16.227421"}, {"key": "day5", "label": "Day 5", "title": "Day 5｜Hafnarstræti Hostel, Hafnarstræti, Akureyri", "subtitle": "5 个地点 · 驾车", "places": [{"id": "p13", "day": 5, "order": 1, "time": "", "label": "Hafnarstræti Hostel, Hafnarstræti, Akureyri", "name": "Hafnarstraeti Hostel Akureyri", "cat": "住宿", "lat": 65.681499, "lng": -18.090905, "color": "#dc2626"}, {"id": "p14", "day": 5, "order": 2, "time": "13:00", "label": "Dettifoss, Vatnajokull National Park", "name": "Dettifoss", "cat": "门票/活动", "lat": 65.814351, "lng": -16.384491, "color": "#dc2626"}, {"id": "p15", "day": 5, "order": 3, "time": "14:30", "label": "Namaskard geothermal area, Myvatn", "name": "Namafjall Hverir", "cat": "门票/活动", "lat": 65.647343, "lng": -16.825068, "color": "#dc2626"}, {"id": "p16", "day": 5, "order": 4, "time": "15:30", "label": "Myvatn Nature Baths", "name": "Myvatn Nature Baths", "cat": "门票/活动", "lat": 65.630395, "lng": -16.848336, "color": "#dc2626"}, {"id": "p17", "day": 5, "order": 5, "time": "17:45", "label": "Godafoss Waterfall", "name": "Godafoss", "cat": "门票/活动", "lat": 65.682816, "lng": -17.550624, "color": "#dc2626"}], "route_url": "https://www.google.com/maps/dir/?api=1&origin=65.681499%2C-18.090905&destination=65.682816%2C-17.550624&travelmode=driving&waypoints=65.814351%2C-16.384491%7C65.647343%2C-16.825068%7C65.630395%2C-16.848336"}, {"key": "day6", "label": "Day 6", "title": "Day 6｜Start Keflavík Airport Hostel, Keflavík", "subtitle": "1 个地点 · 驾车", "places": [{"id": "p18", "day": 6, "order": 1, "time": "", "label": "Start Keflavík Airport Hostel, Keflavík", "name": "Start Keflavik Airport Hostel", "cat": "住宿", "lat": 63.968228, "lng": -22.587524, "color": "#0891b2"}], "route_url": "https://www.google.com/maps?q=63.968228%2C-22.587524"}];
+  var map = null;
+  var layerGroup = null;
+  var markers = [];
+  var initialized = false;
+  var currentViewIndex = 0;
+  var pendingViewIndex = 0;
+  var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, function(ch) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+    });
+  }
+
+  function markerText(point, index, total) {
+    if (total > 26 && point.day) return 'D' + point.day;
+    return index < letters.length ? letters.charAt(index) : String(index + 1);
+  }
+
+  function mapContainerIsReady() {
+    var el = document.getElementById('trip-leaflet-map');
+    if (!el) return false;
+    var rect = el.getBoundingClientRect();
+    return rect.width > 160 && rect.height > 160 && el.offsetParent !== null;
+  }
+
+  function ensureMap() {
+    if (initialized) return true;
+    if (!mapContainerIsReady()) return false;
+    if (typeof L === 'undefined') {
+      var warn = document.getElementById('leaflet-map-warning');
+      if (warn) warn.hidden = false;
+      return false;
+    }
+    map = L.map('trip-leaflet-map', {
+      preferCanvas: true,
+      zoomAnimation: false,
+      markerZoomAnimation: false,
+      inertia: false
+    }).setView([0, 0], 2);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri, TomTom, Garmin, FAO, NOAA, USGS, &copy; OpenStreetMap contributors, and the GIS User Community',
+      maxZoom: 18,
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      keepBuffer: 2
+    }).on('tileerror', function() {
+      var warn = document.getElementById('leaflet-map-warning');
+      if (warn) warn.hidden = false;
+    }).addTo(map);
+
+    layerGroup = L.layerGroup().addTo(map);
+    initialized = true;
+    return true;
+  }
+
+  function refreshLeafletSize() {
+    if (!initialized || !map) return;
+    [60, 180, 360, 720].forEach(function(delay) {
+      setTimeout(function() {
+        map.invalidateSize(true);
+        map.eachLayer(function(layer) {
+          if (layer && layer.redraw) layer.redraw();
+        });
+      }, delay);
+    });
+  }
+
+  function makeIcon(point, index, total) {
+    var label = markerText(point, index, total);
+    return L.divIcon({
+      html: '<div class="leaflet-pin-marker" style="background:' + point.color + '">' + label + '</div>',
+      className: '',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+      popupAnchor: [0, -16]
+    });
+  }
+
+  function renderList(view) {
+    var html = '';
+    view.places.forEach(function(point, index) {
+      var label = markerText(point, index, view.places.length);
+      html += '<li onclick="tripLeafletFocusPlace(' + index + ')">' +
+        '<span class="leaflet-list-pin" style="background:' + point.color + '">' + label + '</span>' +
+        '<div><strong>' + escapeHtml(point.label) + '</strong>' +
+        '<small><em>Day ' + escapeHtml(point.day) + '</em>' + escapeHtml(point.time) + ' · ' + escapeHtml(point.cat) + '</small></div>' +
+        '</li>';
+    });
+    var list = document.getElementById('leaflet-place-list');
+    if (list) list.innerHTML = html;
+  }
+
+  window.tripLeafletShowView = function(index) {
+    currentViewIndex = index || 0;
+    pendingViewIndex = currentViewIndex;
+    var view = views[index] || views[0];
+
+    document.getElementById('leaflet-map-title').textContent = '🗺 ' + view.title;
+    document.getElementById('leaflet-map-subtitle').textContent = view.subtitle + ' · marker 和路线由页面自己绘制';
+    document.getElementById('leaflet-current-title').textContent = view.title;
+    document.getElementById('leaflet-current-count').textContent = view.places.length + ' 个地点';
+    document.getElementById('leaflet-list-title').textContent = view.title;
+    document.getElementById('leaflet-route-link').href = view.route_url;
+
+    document.querySelectorAll('.leaflet-day-tab').forEach(function(btn, i) {
+      btn.classList.toggle('active', i === index);
+    });
+
+    renderList(view);
+
+    if (!ensureMap()) return;
+    refreshLeafletSize();
+    layerGroup.clearLayers();
+    markers = [];
+
+    var latlngs = [];
+    view.places.forEach(function(point, i) {
+      var latlng = [point.lat, point.lng];
+      var marker = L.marker(latlng, {icon: makeIcon(point, i, view.places.length)})
+        .bindPopup('<strong>' + escapeHtml(point.label) + '</strong><br>Day ' + escapeHtml(point.day) + ' · ' + escapeHtml(point.time) + '<br>' + escapeHtml(point.cat));
+      marker.addTo(layerGroup);
+      markers.push(marker);
+      latlngs.push(latlng);
+    });
+
+    var byDay = {};
+    view.places.forEach(function(point) {
+      if (!byDay[point.day]) byDay[point.day] = [];
+      byDay[point.day].push(point);
+    });
+    Object.keys(byDay).forEach(function(day) {
+      var pts = byDay[day];
+      if (pts.length > 1) {
+        L.polyline(pts.map(function(p) { return [p.lat, p.lng]; }), {
+          color: pts[0].color,
+          weight: 3,
+          opacity: 0.78
+        }).addTo(layerGroup);
+      }
+    });
+
+    refreshLeafletSize();
+    if (latlngs.length === 1) {
+      map.setView(latlngs[0], 12);
+    } else if (latlngs.length > 1) {
+      map.fitBounds(latlngs, {padding: [35, 35], maxZoom: index === 0 ? 8 : 12});
+    }
+    refreshLeafletSize();
+  };
+
+  window.tripLeafletFocusPlace = function(index) {
+    if (!ensureMap()) return;
+    var marker = markers[index];
+    if (marker) {
+      map.setView(marker.getLatLng(), 12);
+      marker.openPopup();
+    }
+  };
+
+  window.tripLeafletRefreshMap = function() {
+    var index = pendingViewIndex || currentViewIndex || 0;
+    if (!mapContainerIsReady()) {
+      [120, 300, 700, 1200].forEach(function(delay) {
+        setTimeout(function() {
+          if (mapContainerIsReady()) window.tripLeafletRefreshMap();
+        }, delay);
+      });
+      return;
+    }
+    window.tripLeafletShowView(index);
+    refreshLeafletSize();
+  };
+
+  if ('ResizeObserver' in window) {
+    var mapElForResize = document.getElementById('trip-leaflet-map');
+    if (mapElForResize) {
+      var ro = new ResizeObserver(function() {
+        window.tripLeafletRefreshMap();
+      });
+      ro.observe(mapElForResize);
+    }
+  }
+
+  if ('IntersectionObserver' in window) {
+    var wrapEl = document.getElementById('trip-map-wrap');
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          window.tripLeafletRefreshMap();
+        }
+      });
+    }, {threshold: 0.05});
+    if (wrapEl) observer.observe(wrapEl);
+  }
+
+  window.tripMapShowAll = function() {};
+  window.tripMapShowSegment = function(fLat, fLng, tLat, tLng, el) {
+    if (el) el.classList.add('map-active');
+    var wrap = document.getElementById('trip-map-wrap');
+    if (wrap) wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+  };
+
+  renderList(views[0]);
+  [80, 250, 650, 1200].forEach(function(delay) { setTimeout(window.tripLeafletRefreshMap, delay); });
+})();
+</script>
+<div class="add-all-calendar"><a class="cta-button" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66aaZ5riv5Yaw5bKb6KGM56iLDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTEtMC00ODBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwMVQwODAwMDANCkRURU5EOjIwMjYwODAxVDIyMDAwMA0KU1VNTUFSWTrpppnmuK9IS0cg4oaSIOi1q+WwlOi+m+WfukhFTCDihpIg5Yev5aSr5ouJ57u05YWLS0VG77yI6Iqs5YWw6IiqDQog56m677yM5b6A6L+U77yJDQpMT0NBVElPTjrlh6/lpKvmi4nnu7TlhYvlm73pmYXmnLrlnLoNCkRFU0NSSVBUSU9OOuiKrOWFsOiIquepuu+8jOe7j+i1q+WwlOi+m+Wfuui9rOacuu+8jOmjnuihjCvovazmnLrnuqYyNmg0NW0NCiDjgILlvoDov5TmgLvku7fnuqbCpTc1MDAv5Lq644CCOOaciDHml6Xlh7rlj5HvvIw45pyIMuaXpeaKtei+vuWGsOWym++8iA0KIOaXtuW3ri04aO+8ieOAguWunumZhemihOiuouaXtuS7t+agvOS7peaQuueoi+aYvuekuuS4uuWHhuOAgg0KRU5EOlZFVkVOVA0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS0yLTAtNjMwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDJUMTAzMDAwDQpEVEVORDoyMDI2MDgwMlQxMjAwMDANClNVTU1BUlk66L6b5qC857u05Yip5bCU5Zu95a625YWs5ZutIChUaGluZ3ZlbGxpcikNCkxPQ0FUSU9OOlRoaW5ndmVsbGlyIE5hdGlvbmFsIFBhcmsNCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuu+8jOWBnOi9pui0uee6pjc1MElTSyjCpTUwKeOAgg0KRU5EOlZFVkVOVA0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS0yLTEtNzUwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDJUMTIzMDAwDQpEVEVORDoyMDI2MDgwMlQxMzE1MDANClNVTU1BUlk655uW5q2H5bCU6Ze05q2H5rOJIChHZXlzaXIpDQpMT0NBVElPTjpHZXlzaXIgSG90IFNwcmluZyBBcmVhDQpERVNDUklQVElPTjrlhY3otLnlhaXlnLrjgIINCkVORDpWRVZFTlQNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tMi0yLTgxMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODAyVDEzMzAwMA0KRFRFTkQ6MjAyNjA4MDJUMTQxNTAwDQpTVU1NQVJZOum7hOmHkeeAkeW4gyAoR3VsbGZvc3MpDQpMT0NBVElPTjpHdWxsZm9zcyBXYXRlcmZhbGwNCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuuOAgg0KRU5EOlZFVkVOVA0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS0zLTAtNTcwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDNUMDkzMDAwDQpEVEVORDoyMDI2MDgwM1QxMDMwMDANClNVTU1BUlk65aGe6YeM6ZuF5YWw54CR5biDICsgR2xqdWZyYWJ1aemakOenmOeAkeW4gyAoU2VsamFsYW5kc2Zvc3MpDQpMT0NBVElPTjpTZWxqYWxhbmRzZm9zcw0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy677yM5YGc6L2m6LS557qmNzAwSVNL44CC56m/6Zuo6KGj77yB5Lya6KKr5reL5rm/DQog44CCDQpFTkQ6VkVWRU5UDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTMtMS02NjBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwM1QxMTAwMDANCkRURU5EOjIwMjYwODAzVDExNDUwMA0KU1VNTUFSWTrmlq/np5HliqDngJHluIMgKFNrb2dhZm9zcykNCkxPQ0FUSU9OOlNrb2dhZm9zcw0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CCDQpFTkQ6VkVWRU5UDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTMtMi04MTBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwM1QxMzMwMDANCkRURU5EOjIwMjYwODAzVDE0MzAwMA0KU1VNTUFSWTrpm7flsLzmlq/pu5Hmspnmu6kgKFJleW5pc2ZqYXJhKQ0KTE9DQVRJT046UmV5bmlzZmphcmEgQmxhY2sgU2FuZCBCZWFjaA0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CC5Y2x6Zmp77ya5YG36KKt5beo5rWq5Y+v5oqK5Lq65Y236LWw77yM5Yqh5b+FDQog6L+c56a75rC06L656Iez5bCRMzDnsbPjgIINCkVORDpWRVZFTlQNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNC0wLTYwMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA0VDEwMDAwMA0KRFRFTkQ6MjAyNjA4MDRUMTEzMDAwDQpTVU1NQVJZOuaWr+WNoeWkq+WhlOWxsS9TdmFydGlmb3Nz6buR6Imy546E5q2m5bKp54CR5biDDQpMT0NBVElPTjpTa2FmdGFmZWxsXCwgVmF0bmFqb2t1bGwgTmF0aW9uYWwgUGFyaw0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CCU3ZhcnRpZm9zc+W+kuatpeW+gOi/lOe6pjEuNWgvM2tt5LiK5Z2h44CCDQpFTkQ6VkVWRU5UDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTQtMS03NTBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwNFQxMjMwMDANCkRURU5EOjIwMjYwODA0VDEzMzAwMA0KU1VNTUFSWTrmnbDlj6TmspnpvpnlhrDmsrPmuZYgKEpva3Vsc2FybG9uKQ0KTE9DQVRJT046Sm9rdWxzYXJsb24gR2xhY2llciBMYWdvb24NCkRFU0NSSVBUSU9OOuWFjei0ueWPguinguOAgua4uOiIueWPr+mAie+8iOe6pjQwMOWFgy/kurrvvIzpooTnrpfljp/lm6Dlu7oNCiDorq7ot7Pov4fvvInjgIINCkVORDpWRVZFTlQNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNC0yLTgxMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA0VDEzMzAwMA0KRFRFTkQ6MjAyNjA4MDRUMTQwMDAwDQpTVU1NQVJZOumSu+efs+aymea7qSAoRGlhbW9uZCBCZWFjaCkNCkxPQ0FUSU9OOkRpYW1vbmQgQmVhY2hcLCBKb2t1bHNhcmxvbg0KREVTQ1JJUFRJT0465Yaw5rKz5rmW5a+56Z2i77yM5q2l6KGM6L+H5qGl5Y2z6L6+44CC5YWN6LS544CCDQpFTkQ6VkVWRU5UDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTUtMC03ODBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwNVQxMzAwMDANCkRURU5EOjIwMjYwODA1VDEzNDUwMA0KU1VNTUFSWTrpu5vmj5DngJHluIMgKERldHRpZm9zcykNCkxPQ0FUSU9OOkRldHRpZm9zc1wsIFZhdG5ham9rdWxsIE5hdGlvbmFsIFBhcmsNCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuuOAguS7jjHlj7flhazot6/mnInlspTot6/vvIzkuJzlsrjopb/lsrjlnYflj6/liLANCiDjgIINCkVORDpWRVZFTlQNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNS0xLTg3MEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA1VDE0MzAwMA0KRFRFTkQ6MjAyNjA4MDVUMTUwMDAwDQpTVU1NQVJZOk5hbWFmamFsbCBIdmVyaXLlnLDng63ljLoNCkxPQ0FUSU9OOk5hbWFza2FyZCBnZW90aGVybWFsIGFyZWFcLCBNeXZhdG4NCkRFU0NSSVBUSU9OOuWFjei0ueOAguehq+ejuuWRs+mHje+8jOWcsOmdouW+iOeDq++8jOi1sOacqOagiOmBk+OAgg0KRU5EOlZFVkVOVA0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS01LTItOTMwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDVUMTUzMDAwDQpEVEVORDoyMDI2MDgwNVQxNzAwMDANClNVTU1BUlk657Gz5rmW5rip5rOJIE15dmF0biBOYXR1cmUgQmF0aHPvvIjlj6/pgInvvIkNCkxPQ0FUSU9OOk15dmF0biBOYXR1cmUgQmF0aHMNCkRFU0NSSVBUSU9OOue6pjU1MDBJU0sowqUyNzUpL+S6uu+8jOWPr+mAiemhueebruOAguWmguS4jeWOu+WPr+aPkOWJjeWOu0cNCiBvZGFmb3Nz44CCDQpFTkQ6VkVWRU5UDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTUtMy0xMDY1QHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDVUMTc0NTAwDQpEVEVORDoyMDI2MDgwNVQxODE1MDANClNVTU1BUlk65LyX56We54CR5biDIChHb2RhZm9zcykNCkxPQ0FUSU9OOkdvZGFmb3NzIFdhdGVyZmFsbA0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CCDQpFTkQ6VkVWRU5UDQpFTkQ6VkNBTEVOREFS" download="trip_calendar.ics">📅 一键导入全部行程到日历</a><span class="cta-hint">也可以直接使用同目录下的 ./trip-plan-workspace/trip_calendar.ics 文件导入</span></div>
+<div class="day-card" id="day-1">
+<div class="stub"><span class="stub-num">第1天</span></div>
+<div class="body">
+<h3><span class="day-date">8月1日 周六</span></h3>
+<ol class="timeline">
+<li><span class="time">08:00–22:00</span> <span class="desc">香港HKG → 赫尔辛基HEL → 凯夫拉维克KEF（芬兰航空，往返）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66aaZ5rivSEtHIOKGkiDotavlsJTovpvln7pIRUwg4oaSIOWHr+Wkq+aLiee7tOWFi0tFRu+8iOiKrOWFsOiIquepuu+8jOW+gOi/lO+8iQ0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS0xLTAtNDgwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDFUMDgwMDAwDQpEVEVORDoyMDI2MDgwMVQyMjAwMDANClNVTU1BUlk66aaZ5rivSEtHIOKGkiDotavlsJTovpvln7pIRUwg4oaSIOWHr+Wkq+aLiee7tOWFi0tFRu+8iOiKrOWFsOiIqg0KIOepuu+8jOW+gOi/lO+8iQ0KTE9DQVRJT0465Yev5aSr5ouJ57u05YWL5Zu96ZmF5py65Zy6DQpERVNDUklQVElPTjroiqzlhbDoiKrnqbrvvIznu4/otavlsJTovpvln7rovazmnLrvvIzpo57ooYwr6L2s5py657qmMjZoNDVtDQog44CC5b6A6L+U5oC75Lu357qmwqU3NTAwL+S6uuOAgjjmnIgx5pel5Ye65Y+R77yMOOaciDLml6XmirXovr7lhrDlspvvvIgNCiDml7blt64tOGjvvInjgILlrp7pmYXpooTorqLml7bku7fmoLzku6XmkLrnqIvmmL7npLrkuLrlh4bjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a><a class="mini-action booking" href="https://www.ctrip.com" target="_blank" rel="noopener">🎫 携程</a></span></li>
+</ol>
+<p class="day-total">当日有安排活动合计约 14.0 小时</p>
+</div></div>
+<div class="day-card" id="day-2">
+<div class="stub"><span class="stub-num">第2天</span></div>
+<div class="body">
+<h3><span class="day-date">8月2日 周日</span></h3>
+<ol class="timeline">
+<li><span class="time">10:30–12:00</span> <span class="desc">辛格维利尔国家公园 (Thingvellir)</span><span class="rating">⭐ 4.7（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66L6b5qC857u05Yip5bCU5Zu95a625YWs5ZutIChUaGluZ3ZlbGxpcikNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tMi0wLTYzMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODAyVDEwMzAwMA0KRFRFTkQ6MjAyNjA4MDJUMTIwMDAwDQpTVU1NQVJZOui+m+agvOe7tOWIqeWwlOWbveWutuWFrOWbrSAoVGhpbmd2ZWxsaXIpDQpMT0NBVElPTjpUaGluZ3ZlbGxpciBOYXRpb25hbCBQYXJrDQpERVNDUklQVElPTjrlhY3otLnlhaXlnLrvvIzlgZzovabotLnnuqY3NTBJU0sowqU1MCnjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="64.278608" data-from-lng="-21.081941" data-to-lat="64.313838" data-to-lng="-20.29951" onclick="if(event.target.tagName!=='A') tripMapShowSegment(64.278608,-21.081941,64.313838,-20.29951,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Thingvellir%20National%20Park&amp;destination=Geysir%20Hot%20Spring%20Area&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Thingvellir National Park → Geysir Hot Spring Area（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">12:30–13:15</span> <span class="desc">盖歇尔间歇泉 (Geysir)</span><span class="rating">⭐ 4.6（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU655uW5q2H5bCU6Ze05q2H5rOJIChHZXlzaXIpDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTItMS03NTBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwMlQxMjMwMDANCkRURU5EOjIwMjYwODAyVDEzMTUwMA0KU1VNTUFSWTrnm5bmrYflsJTpl7TmrYfms4kgKEdleXNpcikNCkxPQ0FUSU9OOkdleXNpciBIb3QgU3ByaW5nIEFyZWENCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuuOAgg0KRU5EOlZFVkVOVA0KRU5EOlZDQUxFTkRBUg==" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="64.313838" data-from-lng="-20.29951" data-to-lat="64.314452" data-to-lng="-20.149556" onclick="if(event.target.tagName!=='A') tripMapShowSegment(64.313838,-20.29951,64.314452,-20.149556,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Geysir%20Hot%20Spring%20Area&amp;destination=Gullfoss%20Waterfall&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Geysir Hot Spring Area → Gullfoss Waterfall（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">13:30–14:15</span> <span class="desc">黄金瀑布 (Gullfoss)</span><span class="rating">⭐ 4.8（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66buE6YeR54CR5biDIChHdWxsZm9zcykNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tMi0yLTgxMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODAyVDEzMzAwMA0KRFRFTkQ6MjAyNjA4MDJUMTQxNTAwDQpTVU1NQVJZOum7hOmHkeeAkeW4gyAoR3VsbGZvc3MpDQpMT0NBVElPTjpHdWxsZm9zcyBXYXRlcmZhbGwNCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuuOAgg0KRU5EOlZFVkVOVA0KRU5EOlZDQUxFTkRBUg==" download="event.ics">📅 加入日历</a></span></li>
+</ol>
+<p class="day-total">当日有安排活动合计约 3.0 小时</p>
+</div></div>
+<div class="day-card" id="day-3">
+<div class="stub"><span class="stub-num">第3天</span></div>
+<div class="body">
+<h3><span class="day-date">8月3日 周一</span></h3>
+<ol class="timeline">
+<li><span class="time">09:30–10:30</span> <span class="desc">塞里雅兰瀑布 + Gljufrabui隐秘瀑布 (Seljalandsfoss)</span><span class="rating">⭐ 4.7（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU65aGe6YeM6ZuF5YWw54CR5biDICsgR2xqdWZyYWJ1aemakOenmOeAkeW4gyAoU2VsamFsYW5kc2Zvc3MpDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTMtMC01NzBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwM1QwOTMwMDANCkRURU5EOjIwMjYwODAzVDEwMzAwMA0KU1VNTUFSWTrloZ7ph4zpm4XlhbDngJHluIMgKyBHbGp1ZnJhYnVp6ZqQ56eY54CR5biDIChTZWxqYWxhbmRzZm9zcykNCkxPQ0FUSU9OOlNlbGphbGFuZHNmb3NzDQpERVNDUklQVElPTjrlhY3otLnlhaXlnLrvvIzlgZzovabotLnnuqY3MDBJU0vjgILnqb/pm6jooaPvvIHkvJrooqvmt4vmub8NCiDjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="63.615457" data-from-lng="-19.988169" data-to-lat="63.532104" data-to-lng="-19.511292" onclick="if(event.target.tagName!=='A') tripMapShowSegment(63.615457,-19.988169,63.532104,-19.511292,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Seljalandsfoss&amp;destination=Skogafoss&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Seljalandsfoss → Skogafoss（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">11:00–11:45</span> <span class="desc">斯科加瀑布 (Skogafoss)</span><span class="rating">⭐ 4.8（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU65pav56eR5Yqg54CR5biDIChTa29nYWZvc3MpDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTMtMS02NjBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwM1QxMTAwMDANCkRURU5EOjIwMjYwODAzVDExNDUwMA0KU1VNTUFSWTrmlq/np5HliqDngJHluIMgKFNrb2dhZm9zcykNCkxPQ0FUSU9OOlNrb2dhZm9zcw0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CCDQpFTkQ6VkVWRU5UDQpFTkQ6VkNBTEVOREFS" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="63.532104" data-from-lng="-19.511292" data-to-lat="63.404426" data-to-lng="-19.058799" onclick="if(event.target.tagName!=='A') tripMapShowSegment(63.532104,-19.511292,63.404426,-19.058799,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Skogafoss&amp;destination=Reynisfjara%20Black%20Sand%20Beach&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Skogafoss → Reynisfjara Black Sand Beach（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">13:30–14:30</span> <span class="desc">雷尼斯黑沙滩 (Reynisfjara)</span><span class="rating">⭐ 4.7（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66Zu35bC85pav6buR5rKZ5rupIChSZXluaXNmamFyYSkNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tMy0yLTgxMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODAzVDEzMzAwMA0KRFRFTkQ6MjAyNjA4MDNUMTQzMDAwDQpTVU1NQVJZOumbt+WwvOaWr+m7keaymea7qSAoUmV5bmlzZmphcmEpDQpMT0NBVElPTjpSZXluaXNmamFyYSBCbGFjayBTYW5kIEJlYWNoDQpERVNDUklQVElPTjrlhY3otLnlhaXlnLrjgILljbHpmanvvJrlgbfooq3lt6jmtarlj6/miorkurrljbfotbDvvIzliqHlv4UNCiDov5znprvmsLTovrnoh7PlsJEzMOexs+OAgg0KRU5EOlZFVkVOVA0KRU5EOlZDQUxFTkRBUg==" download="event.ics">📅 加入日历</a></span></li>
+</ol>
+<p class="day-total">当日有安排活动合计约 2.8 小时</p>
+</div></div>
+<div class="day-card" id="day-4">
+<div class="stub"><span class="stub-num">第4天</span></div>
+<div class="body">
+<h3><span class="day-date">8月4日 周二</span></h3>
+<ol class="timeline">
+<li><span class="time">10:00–11:30</span> <span class="desc">斯卡夫塔山/Svartifoss黑色玄武岩瀑布</span><span class="rating">⭐ 4.6（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU65pav5Y2h5aSr5aGU5bGxL1N2YXJ0aWZvc3Ppu5HoibLnjoTmrablsqnngJHluIMNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNC0wLTYwMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA0VDEwMDAwMA0KRFRFTkQ6MjAyNjA4MDRUMTEzMDAwDQpTVU1NQVJZOuaWr+WNoeWkq+WhlOWxsS9TdmFydGlmb3Nz6buR6Imy546E5q2m5bKp54CR5biDDQpMT0NBVElPTjpTa2FmdGFmZWxsXCwgVmF0bmFqb2t1bGwgTmF0aW9uYWwgUGFyaw0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CCU3ZhcnRpZm9zc+W+kuatpeW+gOi/lOe6pjEuNWgvM2tt5LiK5Z2h44CCDQpFTkQ6VkVWRU5UDQpFTkQ6VkNBTEVOREFS" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="64.016455" data-from-lng="-16.966458" data-to-lat="64.078321" data-to-lng="-16.227421" onclick="if(event.target.tagName!=='A') tripMapShowSegment(64.016455,-16.966458,64.078321,-16.227421,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Skaftafell%2C%20Vatnajokull%20National%20Park&amp;destination=Jokulsarlon%20Glacier%20Lagoon&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Skaftafell, Vatnajokull National Park → Jokulsarlon Glacier Lagoon（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">12:30–13:30</span> <span class="desc">杰古沙龙冰河湖 (Jokulsarlon)</span><span class="rating">⭐ 4.9（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU65p2w5Y+k5rKZ6b6Z5Yaw5rKz5rmWIChKb2t1bHNhcmxvbikNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNC0xLTc1MEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA0VDEyMzAwMA0KRFRFTkQ6MjAyNjA4MDRUMTMzMDAwDQpTVU1NQVJZOuadsOWPpOaymem+meWGsOays+a5liAoSm9rdWxzYXJsb24pDQpMT0NBVElPTjpKb2t1bHNhcmxvbiBHbGFjaWVyIExhZ29vbg0KREVTQ1JJUFRJT0465YWN6LS55Y+C6KeC44CC5ri46Ii55Y+v6YCJ77yI57qmNDAw5YWDL+S6uu+8jOmihOeul+WOn+WboOW7ug0KIOiurui3s+i/h++8ieOAgg0KRU5EOlZFVkVOVA0KRU5EOlZDQUxFTkRBUg==" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="64.078321" data-from-lng="-16.227421" data-to-lat="64.043791" data-to-lng="-16.176337" onclick="if(event.target.tagName!=='A') tripMapShowSegment(64.078321,-16.227421,64.043791,-16.176337,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Jokulsarlon%20Glacier%20Lagoon&amp;destination=Diamond%20Beach%2C%20Jokulsarlon&amp;travelmode=walking" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Jokulsarlon Glacier Lagoon → Diamond Beach, Jokulsarlon（步行）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">13:30–14:00</span> <span class="desc">钻石沙滩 (Diamond Beach)</span><span class="rating">⭐ 4.8（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66ZK755+z5rKZ5rupIChEaWFtb25kIEJlYWNoKQ0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS00LTItODEwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDRUMTMzMDAwDQpEVEVORDoyMDI2MDgwNFQxNDAwMDANClNVTU1BUlk66ZK755+z5rKZ5rupIChEaWFtb25kIEJlYWNoKQ0KTE9DQVRJT046RGlhbW9uZCBCZWFjaFwsIEpva3Vsc2FybG9uDQpERVNDUklQVElPTjrlhrDmsrPmuZblr7npnaLvvIzmraXooYzov4fmoaXljbPovr7jgILlhY3otLnjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a></span></li>
+</ol>
+<p class="day-total">当日有安排活动合计约 3.0 小时</p>
+</div></div>
+<div class="day-card" id="day-5">
+<div class="stub"><span class="stub-num">第5天</span></div>
+<div class="body">
+<h3><span class="day-date">8月5日 周三</span></h3>
+<ol class="timeline">
+<li><span class="time">13:00–13:45</span> <span class="desc">黛提瀑布 (Dettifoss)</span><span class="rating">⭐ 4.8（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66bub5o+Q54CR5biDIChEZXR0aWZvc3MpDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTUtMC03ODBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwNVQxMzAwMDANCkRURU5EOjIwMjYwODA1VDEzNDUwMA0KU1VNTUFSWTrpu5vmj5DngJHluIMgKERldHRpZm9zcykNCkxPQ0FUSU9OOkRldHRpZm9zc1wsIFZhdG5ham9rdWxsIE5hdGlvbmFsIFBhcmsNCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuuOAguS7jjHlj7flhazot6/mnInlspTot6/vvIzkuJzlsrjopb/lsrjlnYflj6/liLANCiDjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="65.814351" data-from-lng="-16.384491" data-to-lat="65.647343" data-to-lng="-16.825068" onclick="if(event.target.tagName!=='A') tripMapShowSegment(65.814351,-16.384491,65.647343,-16.825068,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Dettifoss%2C%20Vatnajokull%20National%20Park&amp;destination=Namaskard%20geothermal%20area%2C%20Myvatn&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Dettifoss, Vatnajokull National Park → Namaskard geothermal area, Myvatn（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">14:30–15:00</span> <span class="desc">Namafjall Hverir地热区</span><span class="rating">⭐ 4.5（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU6TmFtYWZqYWxsIEh2ZXJpcuWcsOeDreWMug0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS01LTEtODcwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDVUMTQzMDAwDQpEVEVORDoyMDI2MDgwNVQxNTAwMDANClNVTU1BUlk6TmFtYWZqYWxsIEh2ZXJpcuWcsOeDreWMug0KTE9DQVRJT046TmFtYXNrYXJkIGdlb3RoZXJtYWwgYXJlYVwsIE15dmF0bg0KREVTQ1JJUFRJT0465YWN6LS544CC56Gr56O65ZGz6YeN77yM5Zyw6Z2i5b6I54Or77yM6LWw5pyo5qCI6YGT44CCDQpFTkQ6VkVWRU5UDQpFTkQ6VkNBTEVOREFS" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="65.647343" data-from-lng="-16.825068" data-to-lat="65.630395" data-to-lng="-16.848336" onclick="if(event.target.tagName!=='A') tripMapShowSegment(65.647343,-16.825068,65.630395,-16.848336,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Namaskard%20geothermal%20area%2C%20Myvatn&amp;destination=Myvatn%20Nature%20Baths&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Namaskard geothermal area, Myvatn → Myvatn Nature Baths（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">15:30–17:00</span> <span class="desc">米湖温泉 Myvatn Nature Baths（可选）</span><span class="rating">⭐ 4.5（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU657Gz5rmW5rip5rOJIE15dmF0biBOYXR1cmUgQmF0aHPvvIjlj6/pgInvvIkNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNS0yLTkzMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA1VDE1MzAwMA0KRFRFTkQ6MjAyNjA4MDVUMTcwMDAwDQpTVU1NQVJZOuexs+a5lua4qeaziSBNeXZhdG4gTmF0dXJlIEJhdGhz77yI5Y+v6YCJ77yJDQpMT0NBVElPTjpNeXZhdG4gTmF0dXJlIEJhdGhzDQpERVNDUklQVElPTjrnuqY1NTAwSVNLKMKlMjc1KS/kurrvvIzlj6/pgInpobnnm67jgILlpoLkuI3ljrvlj6/mj5DliY3ljrtHDQogb2RhZm9zc+OAgg0KRU5EOlZFVkVOVA0KRU5EOlZDQUxFTkRBUg==" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="65.630395" data-from-lng="-16.848336" data-to-lat="65.682816" data-to-lng="-17.550624" onclick="if(event.target.tagName!=='A') tripMapShowSegment(65.630395,-16.848336,65.682816,-17.550624,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Myvatn%20Nature%20Baths&amp;destination=Godafoss%20Waterfall&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Myvatn Nature Baths → Godafoss Waterfall（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">17:45–18:15</span> <span class="desc">众神瀑布 (Godafoss)</span><span class="rating">⭐ 4.7（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU65LyX56We54CR5biDIChHb2RhZm9zcykNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNS0zLTEwNjVAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwNVQxNzQ1MDANCkRURU5EOjIwMjYwODA1VDE4MTUwMA0KU1VNTUFSWTrkvJfnpZ7ngJHluIMgKEdvZGFmb3NzKQ0KTE9DQVRJT046R29kYWZvc3MgV2F0ZXJmYWxsDQpERVNDUklQVElPTjrlhY3otLnlhaXlnLrjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a></span></li>
+</ol>
+<p class="day-total">当日有安排活动合计约 3.2 小时</p>
+</div></div>
+  </section>
+
+  <section id="gallery" class="tab-content">
+    <h2>地点图鉴</h2>
+    <p class="lede">行程里涉及的每一个地点，汇总展示真实照片、评分、点评摘要和配套/增值服务。</p>
+    <div class="gallery-notice">图鉴采用“有数据才显示”：有图片/评分/评价就展示，缺失字段直接跳过，不显示未抓取提示。</div><div class="places-gallery"><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Keflavik%20Airport&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="凯夫拉维克国际机场图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">凯夫拉维克国际机场</h4><div class="place-meta">长途交通 · 第1天 · Keflavik Airport</div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Selfoss%20Hostel%20Austurvegur%2028&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Selfoss Hostel, Austurvegur 28, Selfoss图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Selfoss Hostel, Austurvegur 28, Selfoss</h4><div class="place-meta">住宿 · 第2天 · Selfoss Hostel Austurvegur 28</div><div class="place-rating">⭐ 7.8（Booking）</div><p class="place-review">镇中心位置，免费停车，共享厨房设施齐全，步行可到小猪超市</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>免费停车</li><li>共享厨房</li><li>免费WiFi</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=The%20Barn%20Norurfoss%20Vik&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="The Barn, Norðurfoss, Vík图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">The Barn, Norðurfoss, Vík</h4><div class="place-meta">住宿 · 第3天 · The Barn Norurfoss Vik</div><div class="place-rating">⭐ 8.6（5900条评价 · Booking）</div><p class="place-review">现代风格青旅，遮光窗帘设计贴心，厨房设备齐全，距黑沙滩仅4公里</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>免费停车</li><li>共享厨房</li><li>免费WiFi</li><li>充电桩</li><li>行李寄存</li><li>酒吧</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Old%20Airline%20Guesthouse%20Hafnarbraut%2024%20Hofn&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Old Airline Guesthouse, Hafnarbraut 24, Höfn图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Old Airline Guesthouse, Hafnarbraut 24, Höfn</h4><div class="place-meta">住宿 · 第4天 · Old Airline Guesthouse Hafnarbraut 24 Hofn</div><div class="place-rating">⭐ 9.1（Booking）</div><p class="place-review">1946年老航站楼改造，港边位置风景好，共用厨房和花园，含早餐性价比高</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>免费停车</li><li>共享厨房</li><li>免费WiFi</li><li>含早餐</li><li>花园</li><li>洗衣设施</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Hafnarstraeti%20Hostel%20Akureyri&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Hafnarstræti Hostel, Hafnarstræti, Akureyri图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Hafnarstræti Hostel, Hafnarstræti, Akureyri</h4><div class="place-meta">住宿 · 第5天 · Hafnarstraeti Hostel Akureyri</div><div class="place-rating">⭐ 8.4（1600条评价 · Booking）</div><p class="place-review">市中心胶囊青旅，三家中最便宜，公共厨房超大，厨具充足</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>免费WiFi</li><li>共享厨房</li><li>烧烤设施</li><li>礼品店</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Start%20Keflavik%20Airport%20Hostel&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Start Keflavík Airport Hostel, Keflavík图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Start Keflavík Airport Hostel, Keflavík</h4><div class="place-meta">住宿 · 第6天 · Start Keflavik Airport Hostel</div><div class="place-rating">⭐ 7.5（Booking）</div><p class="place-review">距机场近，还车赶早班机方便，共用厨房可自炊</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>免费停车</li><li>共享厨房</li><li>免费WiFi</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=The%20Soup%20Company&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="The Soup Company, Vik图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">The Soup Company, Vik</h4><div class="place-meta">餐饮 · 第3天 · The Soup Company</div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Heimahumar%20food%20truck&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Heimahumar, Höfn图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Heimahumar, Höfn</h4><div class="place-meta">餐饮 · 第4天 · Heimahumar food truck</div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Brynja%20Ice%20Cream&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Brynja, Akureyri图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Brynja, Akureyri</h4><div class="place-meta">餐饮 · 第5天 · Brynja Ice Cream</div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Thingvellir%20National%20Park&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Thingvellir National Park图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Thingvellir National Park</h4><div class="place-meta">门票/活动 · 第2天</div><div class="place-rating">⭐ 4.7（Google Maps）</div><p class="place-review">UNESCO世界遗产，北美与欧亚板块裂缝，冰岛议会发源地</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>免费停车场</li><li>游客中心</li><li>洗手间</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Geysir%20Geothermal%20Area&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Geysir Hot Spring Area图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Geysir Hot Spring Area</h4><div class="place-meta">门票/活动 · 第2天 · Geysir Geothermal Area</div><div class="place-rating">⭐ 4.6（Google Maps）</div><p class="place-review">Strokkur间歇泉每5-10分钟喷发20米高，免费24小时开放</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>免费停车</li><li>游客中心</li><li>餐厅</li><li>洗手间</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Gullfoss&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Gullfoss Waterfall图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Gullfoss Waterfall</h4><div class="place-meta">门票/活动 · 第2天 · Gullfoss</div><div class="place-rating">⭐ 4.8（Google Maps）</div><p class="place-review">冰岛最壮观的瀑布之一，双层跌落32米，晴天必有彩虹</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>免费停车</li><li>游客中心</li><li>餐厅</li><li>洗手间</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Seljalandsfoss&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Seljalandsfoss图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Seljalandsfoss</h4><div class="place-meta">门票/活动 · 第3天</div><div class="place-rating">⭐ 4.7（Google Maps）</div><p class="place-review">走到瀑布水帘后面看世界，隔壁Gljufrabui藏在岩缝里别有洞天</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>停车场</li><li>洗手间</li><li>小型商店</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Skogafoss&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Skogafoss图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Skogafoss</h4><div class="place-meta">门票/活动 · 第3天</div><div class="place-rating">⭐ 4.8（Google Maps）</div><p class="place-review">60米落差，晴天常现双彩虹，可登370级台阶俯瞰</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>停车场</li><li>洗手间</li><li>露营地</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Reynisfjara%20Beach&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Reynisfjara Black Sand Beach图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Reynisfjara Black Sand Beach</h4><div class="place-meta">门票/活动 · 第3天 · Reynisfjara Beach</div><div class="place-rating">⭐ 4.7（Google Maps）</div><p class="place-review">玄武岩柱+黑沙+雷尼斯岩海柱群，冰岛最出片的沙滩，警惕偷袭巨浪远离水线</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>免费停车</li><li>餐厅</li><li>洗手间</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Skaftafell&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Skaftafell, Vatnajokull National Park图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Skaftafell, Vatnajokull National Park</h4><div class="place-meta">门票/活动 · 第4天 · Skaftafell</div><div class="place-rating">⭐ 4.6（Google Maps）</div><p class="place-review">瓦特纳冰川国家公园门户，Svartifoss黑色玄武岩柱瀑布徒步往返约1h</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>游客中心</li><li>停车场</li><li>洗手间</li><li>露营地</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Jokulsarlon&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Jokulsarlon Glacier Lagoon图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Jokulsarlon Glacier Lagoon</h4><div class="place-meta">门票/活动 · 第4天 · Jokulsarlon</div><div class="place-rating">⭐ 4.9（Google Maps）</div><p class="place-review">冰岛必去！巨型浮冰在湖中漂流入海，海豹在冰山间嬉戏，景色震撼</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>停车场</li><li>洗手间</li><li>咖啡厅</li><li>游船售票处</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Diamond%20Beach&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Diamond Beach, Jokulsarlon图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Diamond Beach, Jokulsarlon</h4><div class="place-meta">门票/活动 · 第4天 · Diamond Beach</div><div class="place-rating">⭐ 4.8（Google Maps）</div><p class="place-review">被海浪冲回黑沙滩的冰块像钻石散落，冰岛最出片的机位之一</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>免费停车</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Dettifoss&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Dettifoss, Vatnajokull National Park图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Dettifoss, Vatnajokull National Park</h4><div class="place-meta">门票/活动 · 第5天 · Dettifoss</div><div class="place-rating">⭐ 4.8（Google Maps）</div><p class="place-review">欧洲水量最大的瀑布，100米宽44米高，雷神之锤般的水声</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>停车场</li><li>洗手间</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Namafjall%20Hverir&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Namaskard geothermal area, Myvatn图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Namaskard geothermal area, Myvatn</h4><div class="place-meta">门票/活动 · 第5天 · Namafjall Hverir</div><div class="place-rating">⭐ 4.5（Google Maps）</div><p class="place-review">沸腾泥浆池、蒸汽喷口、硫磺地貌，像走在火星表面</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>免费停车</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Myvatn%20Nature%20Baths&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Myvatn Nature Baths图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Myvatn Nature Baths</h4><div class="place-meta">门票/活动 · 第5天</div><div class="place-rating">⭐ 4.5（Google Maps）</div><p class="place-review">比蓝湖便宜、人更少的天然温泉，蓝色温泉水俯瞰米湖景色</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>停车场</li><li>更衣室</li><li>淋浴</li><li>储物柜</li><li>咖啡厅</li></ul></div></div></div><div class="place-card"><div class="place-photo-wrap"><div class="place-photo-fallback"><img class="place-photo" src="https://tse1.mm.bing.net/th?q=Godafoss&amp;w=800&amp;h=500&amp;c=7&amp;rs=1&amp;p=0" alt="Godafoss Waterfall图片预览" loading="lazy" onerror="this.closest('.place-photo-fallback').classList.add('image-failed')"><div class="place-photo-placeholder gallery-search-placeholder"><div class="gallery-placeholder-icon">🖼️</div><strong>图片预览加载失败</strong><span>可以手动补充稳定图片地址到 <code>photo_url</code></span></div></div></div><div class="place-info"><h4 class="place-name">Godafoss Waterfall</h4><div class="place-meta">门票/活动 · 第5天 · Godafoss</div><div class="place-rating">⭐ 4.7（Google Maps）</div><p class="place-review">12米高30米宽的马蹄形瀑布，公元1000年冰岛皈依基督教时众神像投入此瀑布</p><div class="place-services"><div class="place-services-title">🛎️ 配套服务</div><ul><li>停车场</li><li>洗手间</li><li>商店</li></ul></div></div></div></div>
+  </section>
+
+  <section id="budget" class="tab-content">
+    <h2>预算明细</h2>
+    <div class="budget-summary">
+<p class="budget-meta">路线：香港 → 冰岛　|　2 人　|　CNY</p>
+<p class="grand-total">总预算：<strong>32080.00 CNY</strong>
+　人均：<strong>16040.00 CNY</strong>
+</p>
+<div class="budget-day-block">
+<h4 class="budget-day-title">第1天（8月1日 周六）</h4>
+<table class="budget-table"><thead><tr><th>类别</th><th>项目</th><th>金额</th></tr></thead><tbody>
+<tr><td class="budget-cat-cell" rowspan="1">长途交通</td><td>香港HKG → 赫尔辛基HEL → 凯夫拉维克KEF（芬兰航空，往返）</td><td class='budget-amt'>15000.00</td></tr>
+<tr class="day-subtotal-row"><td colspan="2">📌 第1天（8月1日 周六）小计</td><td class="budget-amt"><strong>15000.00</strong></td></tr>
+</tbody></table>
+</div>
+<div class="budget-day-block">
+<h4 class="budget-day-title">第2天（8月2日 周日）</h4>
+<table class="budget-table"><thead><tr><th>类别</th><th>项目</th><th>金额</th></tr></thead><tbody>
+<tr><td class="budget-cat-cell" rowspan="1">住宿</td><td>Selfoss Hostel（塞尔福斯青旅）双人间</td><td class='budget-amt'>450.00</td></tr>
+<tr><td class="budget-cat-cell" rowspan="2">租车/装备</td><td>自动挡经济型租车（6天）+ 全额保险（GP+S&amp;A+CDW）+ 道路税</td><td class='budget-amt'>7400.00</td></tr>
+<tr><td>环岛汽油费（全程约1500km）</td><td class='budget-amt'>1800.00</td></tr>
+<tr><td class="budget-cat-cell" rowspan="4">门票/活动</td><td>辛格维利尔国家公园 (Thingvellir)</td><td class='budget-amt'>0.00</td></tr>
+<tr><td>盖歇尔间歇泉 (Geysir)</td><td class='budget-amt'>0.00</td></tr>
+<tr><td>黄金瀑布 (Gullfoss)</td><td class='budget-amt'>0.00</td></tr>
+<tr><td>辛格维利尔国家公园停车费</td><td class='budget-amt'>50.00</td></tr>
+<tr><td class="budget-cat-cell" rowspan="1">餐饮</td><td>Day2餐饮：午餐热狗+晚餐自炊</td><td class='budget-amt'>140.00</td></tr>
+<tr class="day-subtotal-row"><td colspan="2">📌 第2天（8月2日 周日）小计</td><td class="budget-amt"><strong>9840.00</strong></td></tr>
+</tbody></table>
+</div>
+<div class="budget-day-block">
+<h4 class="budget-day-title">第3天（8月3日 周一）</h4>
+<table class="budget-table"><thead><tr><th>类别</th><th>项目</th><th>金额</th></tr></thead><tbody>
+<tr><td class="budget-cat-cell" rowspan="1">住宿</td><td>The Barn（维克穀倉旅館）双人间</td><td class='budget-amt'>450.00</td></tr>
+<tr><td class="budget-cat-cell" rowspan="3">门票/活动</td><td>塞里雅兰瀑布 + Gljufrabui隐秘瀑布 (Seljalandsfoss)</td><td class='budget-amt'>0.00</td></tr>
+<tr><td>斯科加瀑布 (Skogafoss)</td><td class='budget-amt'>0.00</td></tr>
+<tr><td>雷尼斯黑沙滩 (Reynisfjara)</td><td class='budget-amt'>0.00</td></tr>
+<tr><td class="budget-cat-cell" rowspan="1">餐饮</td><td>Day3餐饮：午餐The Soup Company+晚餐Black Crust Pizzeria</td><td class='budget-amt'>560.00</td></tr>
+<tr class="day-subtotal-row"><td colspan="2">📌 第3天（8月3日 周一）小计</td><td class="budget-amt"><strong>1010.00</strong></td></tr>
+</tbody></table>
+</div>
+<div class="budget-day-block">
+<h4 class="budget-day-title">第4天（8月4日 周二）</h4>
+<table class="budget-table"><thead><tr><th>类别</th><th>项目</th><th>金额</th></tr></thead><tbody>
+<tr><td class="budget-cat-cell" rowspan="1">住宿</td><td>Old Airline Guesthouse（赫本老飞机旅馆）双人间</td><td class='budget-amt'>700.00</td></tr>
+<tr><td class="budget-cat-cell" rowspan="3">门票/活动</td><td>斯卡夫塔山/Svartifoss黑色玄武岩瀑布</td><td class='budget-amt'>0.00</td></tr>
+<tr><td>杰古沙龙冰河湖 (Jokulsarlon)</td><td class='budget-amt'>0.00</td></tr>
+<tr><td>钻石沙滩 (Diamond Beach)</td><td class='budget-amt'>0.00</td></tr>
+<tr><td class="budget-cat-cell" rowspan="1">餐饮</td><td>Day4餐饮：午餐自备干粮+晚餐Heimahumar餐车龙虾汤</td><td class='budget-amt'>320.00</td></tr>
+<tr class="day-subtotal-row"><td colspan="2">📌 第4天（8月4日 周二）小计</td><td class="budget-amt"><strong>1020.00</strong></td></tr>
+</tbody></table>
+</div>
+<div class="budget-day-block">
+<h4 class="budget-day-title">第5天（8月5日 周三）</h4>
+<table class="budget-table"><thead><tr><th>类别</th><th>项目</th><th>金额</th></tr></thead><tbody>
+<tr><td class="budget-cat-cell" rowspan="1">住宿</td><td>Hafnarstræti Hostel（阿克雷里胶囊青旅）双人间</td><td class='budget-amt'>520.00</td></tr>
+<tr><td class="budget-cat-cell" rowspan="4">门票/活动</td><td>黛提瀑布 (Dettifoss)</td><td class='budget-amt'>0.00</td></tr>
+<tr><td>Namafjall Hverir地热区</td><td class='budget-amt'>0.00</td></tr>
+<tr><td>米湖温泉 Myvatn Nature Baths（可选）</td><td class='budget-amt'>550.00</td></tr>
+<tr><td>众神瀑布 (Godafoss)</td><td class='budget-amt'>0.00</td></tr>
+<tr><td class="budget-cat-cell" rowspan="1">餐饮</td><td>Day5餐饮：全天自炊+阿克雷里Brynja冰淇淋</td><td class='budget-amt'>220.00</td></tr>
+<tr class="day-subtotal-row"><td colspan="2">📌 第5天（8月5日 周三）小计</td><td class="budget-amt"><strong>1290.00</strong></td></tr>
+</tbody></table>
+</div>
+<div class="budget-day-block">
+<h4 class="budget-day-title">第6天（8月6日 周四）</h4>
+<table class="budget-table"><thead><tr><th>类别</th><th>项目</th><th>金额</th></tr></thead><tbody>
+<tr><td class="budget-cat-cell" rowspan="1">住宿</td><td>Start Keflavík Airport Hostel（凯夫拉维克机场青旅）双人间</td><td class='budget-amt'>450.00</td></tr>
+<tr><td class="budget-cat-cell" rowspan="1">餐饮</td><td>Day6餐饮：午餐N1加油站羊肉堡+晚餐自炊清库存</td><td class='budget-amt'>280.00</td></tr>
+<tr class="day-subtotal-row"><td colspan="2">📌 第6天（8月6日 周四）小计</td><td class="budget-amt"><strong>730.00</strong></td></tr>
+</tbody></table>
+</div>
+<div class="budget-day-block">
+<h4 class="budget-day-title">行前/通用</h4>
+<table class="budget-table"><thead><tr><th>类别</th><th>项目</th><th>金额</th></tr></thead><tbody>
+<tr><td class="budget-cat-cell" rowspan="4">签证/证件</td><td>冰岛申根签证费</td><td class='budget-amt'>1500.00</td></tr>
+<tr><td>VFS签证中心服务费</td><td class='budget-amt'>490.00</td></tr>
+<tr><td>申根旅行医疗保险（7天）</td><td class='budget-amt'>400.00</td></tr>
+<tr><td>驾照英文翻译公证 + 海牙认证</td><td class='budget-amt'>800.00</td></tr>
+<tr class="day-subtotal-row"><td colspan="2">📌 行前/通用小计</td><td class="budget-amt"><strong>3190.00</strong></td></tr>
+</tbody></table>
+</div>
+<div class="budget-grand-summary">
+<p class="grand-total-final">🧾 全程总计：<strong>32080.00 CNY</strong></p>
+<p class="per-head-final">人均：<strong>16040.00 CNY</strong></p>
+</div>
+</div>
+  </section>
+
+  <section id="visa" class="tab-content">
+    <h2>签证与证件</h2>
+    <div class="checklist" data-stamp="ENTRY · 入境核查">
+      <p><strong>结论：中国大陆公民前往冰岛需要办理申根签证（C类短期签证）。</strong></p>
+<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:16px;margin:16px 0;">
+  <strong>⚠️ 紧急提醒：</strong>出发日期（2026年8月1日）距今仅约30天，夏季旺季申根签证审核可能长达45天，时间极为紧张。建议立即开始准备材料并预约递签。
+</div>
+<ol class="steps">
+  <li><strong>在VFS Global官网预约递签</strong>：北京/上海/广州/成都等多城可选，必须本人到场录指纹。</li>
+  <li><strong>准备全部材料</strong>：护照（有效期>离境日3个月+2页空白）、35×45mm白底照片2张、往返机票预订单（可免费取消）、全程酒店订单（英文）、详细英文行程单、旅行保险（保额≥3万欧元）、银行流水（余额3-5万）、在职证明（英文+公章）、身份证+户口本复印件。</li>
+  <li><strong>缴纳费用</strong>：签证费约¥750/人 + VFS服务费约¥245/人。</li>
+  <li><strong>等待审核</strong>：常规约15个工作日，旺季可能30-45天。</li>
+</ol>
+<h4>护照要求</h4>
+<ul>
+  <li>有效期须超过离开申根区日期至少3个月</li>
+  <li>至少2页连续空白签证页</li>
+</ul>
+<h4>旅行保险</h4>
+<ul>
+  <li>保额≥3万欧元（约24万人民币），覆盖整个申根区停留期</li>
+  <li>建议比实际行程多买1-2天</li>
+</ul>
+<p style="margin-top:12px;color:#888;font-size:0.85rem;">⚠️ 签证政策可能随时调整，以上基于2026年7月2日搜索结果。出发前请到冰岛驻华使馆官网或VFS Global官网再次核实。建议签证获批前机票酒店选可免费取消的选项。</p>
+    </div>
+  </section>
+
+  <section id="customs" class="tab-content">
+    <h2>当地须知</h2>
+    <p class="lede">入境禁带/限带物品，以及当地的行为举止与文化禁忌提醒。</p>
+    <div class="checklist" data-stamp="CUSTOMS · 入乡随俗">
+      <h4>入境禁带物品</h4>
+<ol class="steps">
+  <li><strong>肉类/奶制品/生鲜</strong>：未经加工的肉、禽、蛋、奶制品严禁携带（牛肉干、鸭脖等零食也不行）。</li>
+  <li><strong>武器</strong>：匕首（>12cm）、弹簧刀、十字弓等。</li>
+  <li><strong>毒品/麻醉品</strong>：严禁。</li>
+</ol>
+<h4>处方药入境（哮喘吸入剂）</h4>
+<ul>
+  <li>允许携带，最多100天用量。保留原包装+药店标签，携带英文医生说明信。</li>
+  <li>放随身行李不要托运。</li>
+</ul>
+<h4>当地礼仪</h4>
+<ul>
+  <li><strong>小费</strong>：冰岛没有小费文化，不需要给。强行给可能被视为侮辱。</li>
+  <li><strong>温泉</strong>：入池前必须裸身淋浴，这是最严格的文化要求。</li>
+  <li><strong>拍照</strong>：走标记步道，不踩苔藓。许多景点禁止无人机。</li>
+  <li><strong>自来水</strong>：直接饮用，带个水瓶即可。</li>
+  <li><strong>支付</strong>：信用卡几乎全覆盖，几乎不需现金。</li>
+  <li><strong>守时</strong>：迟到5分钟即视为不尊重。</li>
+</ul>
+<h4>环境保护</h4>
+<ul>
+  <li>严禁越野驾驶（off-road），重罚。</li>
+  <li>不带走石头/植物，只在指定营地露营。</li>
+</ul>
+    </div>
+  </section>
+
+  <section id="local-needs" class="tab-content">
+    <h2>本地特殊需求</h2>
+    <div class="checklist" data-stamp="LOCAL · 在地准备">
+      <h4>🚗 自驾租车准备（中国大陆C2驾照）</h4>
+<p><strong>结论：C2驾照在冰岛可以合法开车，但需配齐以下证件：</strong></p>
+<ol class="steps">
+  <li><strong>中国驾照原件</strong>（C2，持证满1年）</li>
+  <li><strong>驾照英文翻译公证件 + 海牙认证（Apostille）</strong>：公证处办理，约¥200-300，3-7个工作日。再加海牙认证3-5个工作日。</li>
+  <li><strong>护照原件</strong></li>
+</ol>
+<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:16px;margin:16px 0;">
+  <strong>⚠️ 注意：</strong>中国大陆无法办理真正的国际驾照（IDP）。网上的"国际驾照翻译件"不具法律效力。走公证+海牙认证是最稳妥的正规途径。
+</div>
+<h4>租车费用（6天，自动挡经济型）</h4>
+<ul>
+  <li>基础租金+全额保险+道路税：约 ¥7,400/整车</li>
+  <li>汽油费（约1,500km）：约 ¥1,800/整车</li>
+  <li><strong>保险不能省</strong>：碎石险（GP）+ 沙尘险（S&A）必买</li>
+</ul>
+<h4>交通规则</h4>
+<ul>
+  <li>靠右行驶（与中国一致）</li>
+  <li>全天24小时强制开近光灯</li>
+  <li>限速：沥青路90km/h，砂石路80km/h，城区50km/h</li>
+  <li>严禁越野驾驶（off-road）</li>
+</ul>
+<h4>加油</h4>
+<ul>
+  <li>油价约220-240 ISK/升（约¥11-12/升）</li>
+  <li>偏远地区油站间距可达100-200km，每天出发前加满</li>
+  <li>国内信用卡需向银行申请开通4位PIN码</li>
+</ul>
+<h4>必备App</h4>
+<ul>
+  <li><strong>road.is</strong> — 实时路况/封路信息</li>
+  <li><strong>vedur.is</strong> — 冰岛气象局天气预警</li>
+  <li><strong>112 Iceland</strong> — 紧急求救</li>
+  <li><strong>Parka</strong> — 停车缴费</li>
+</ul>
+    </div>
+  </section>
+
+  <section id="notes" class="tab-content">
+    <h2>注意事项</h2>
+    <div class="disclaimer">
+      <ul>
+  <li><strong>价格说明</strong>：机票、住宿、租车等价格为搜索时刻的参考价，实际预订时请以携程等平台实时显示为准。机票价格浮动较大，建议提前3-6个月预订。</li>
+  <li><strong>汇率说明</strong>：外币价格已按搜索时汇率换算为人民币，实际结算时可能因汇率波动有所不同。欧元兑人民币参考汇率约1:8.0，冰岛克朗约1:0.053。</li>
+  <li><strong>预算缓冲</strong>：建议额外预留10-15%应急预算（约¥3200-4800），用于应对价格波动、额外油费或突发情况。</li>
+  <li><strong>日全食提醒</strong>：2026年8月12日冰岛西部将出现日全食，虽然你的行程（8/1-8/7）不会直接遇上，但8月初住宿和租车需求会因此上涨，建议尽早预订。</li>
+  <li><strong>签证风险</strong>：出发前仅剩约30天，夏季旺季签证审核可能长达45天。时间非常紧张，建议立即行动。可咨询专业签证代理了解加急方案。</li>
+  <li><strong>自驾安全</strong>：冰岛风大路窄，请务必遵守交通规则。黑沙滩海浪危险，务必远离水线至少30米。</li>
+  <li><strong>保险建议</strong>：除申根旅行保险外，建议确认信用卡是否含旅行意外险和租车保险。</li>
+</ul>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">PLANNED WITH TRAVEL-PLANNER · 价格与政策请以预订时为准</footer>
+
+<script>
+  document.querySelectorAll(".tab-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.remove("active"); });
+      document.querySelectorAll(".tab-content").forEach(function (s) { s.classList.remove("active"); });
+      btn.classList.add("active");
+      document.getElementById(btn.dataset.target).classList.add("active");
+      if (btn.dataset.target === "itinerary" && window.tripLeafletRefreshMap) {
+        setTimeout(window.tripLeafletRefreshMap, 50);
+        setTimeout(window.tripLeafletRefreshMap, 160);
+        setTimeout(window.tripLeafletRefreshMap, 360);
+        setTimeout(window.tripLeafletRefreshMap, 760);
+        setTimeout(window.tripLeafletRefreshMap, 1300);
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+
+  document.querySelectorAll(".day-card h3, .day-card .stub").forEach(function (h) {
+    h.addEventListener("click", function () {
+      h.closest(".day-card").classList.toggle("collapsed");
+    });
+  });
+</script>
+
+</body>
+</html>

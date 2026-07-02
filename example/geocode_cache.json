@@ -1,0 +1,20 @@
+{
+  "keflavik airport | keflavikurflugvollur | 凯夫拉维克国际机场 | iceland": {
+    "lat": 63.995043,
+    "lng": -22.623864,
+    "display_name": "Keflavik Airport, 1A, Kjóavöllur, Suðurnesjabær, Southern Peninsula, 235, Iceland",
+    "query": "Keflavik Airport, Iceland"
+  },
+  "selfoss hostel austurvegur 28 | selfoss hostel | selfoss hostel, austurvegur 28, selfoss | iceland": {
+    "lat": 63.936932,
+    "lng": -20.993788,
+    "display_name": "Iceland Bed & Breakfast — Selfoss Hostel, 28, Austurvegur, Selfoss, Sveitarfélagið Árborg, Southern Region, 800, Iceland",
+    "query": "Selfoss Hostel Austurvegur 28, Iceland"
+  },
+  "hafnarstraeti hostel akureyri | hafnarstraeti hostel akureyri | hafnarstræti hostel, hafnarstræti, akureyri | iceland": {
+    "lat": 65.681499,
+    "lng": -18.090905,
+    "display_name": "Hafnarstræti Hostel, 99-100, Hafnarstræti, Miðbær, Akureyri, Northeastern Region, 600, Iceland",
+    "query": "Hafnarstraeti Hostel Akureyri, Iceland"
+  }
+}

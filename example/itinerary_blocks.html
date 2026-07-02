@@ -1,0 +1,301 @@
+<section class="leaflet-esri-map" id="trip-map-wrap">
+  <div class="leaflet-map-head">
+    <div>
+      <strong id="leaflet-map-title">🗺 全部｜全行程地点</strong>
+      <span id="leaflet-map-subtitle">19 个地点 · marker 和路线由页面自己绘制</span>
+    </div>
+    <a id="leaflet-route-link" href="https://www.google.com/maps/dir/?api=1&amp;origin=63.995043%2C-22.623864&amp;destination=63.968228%2C-22.587524&amp;travelmode=driving&amp;waypoints=63.936932%2C-20.993788%7C64.278608%2C-21.081941%7C64.313838%2C-20.29951%7C64.314452%2C-20.149556%7C63.43783%2C-19.060041%7C63.615457%2C-19.988169%7C63.532104%2C-19.511292%7C63.404426%2C-19.058799%7C64.251263%2C-15.209137%7C64.016455%2C-16.966458%7C64.078321%2C-16.227421%7C64.043791%2C-16.176337%7C65.681499%2C-18.090905%7C65.814351%2C-16.384491%7C65.647343%2C-16.825068%7C65.630395%2C-16.848336%7C65.682816%2C-17.550624" target="_blank" rel="noopener">新窗口打开路线</a>
+  </div>
+  <div class="leaflet-day-tabs">
+    <button class="leaflet-day-tab active" onclick="tripLeafletShowView(0)"><strong>全部</strong><span>19 个地点</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(1)"><strong>Day 1</strong><span>1 个地点 · 驾车</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(2)"><strong>Day 2</strong><span>4 个地点 · 驾车</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(3)"><strong>Day 3</strong><span>4 个地点 · 驾车</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(4)"><strong>Day 4</strong><span>4 个地点 · 驾车</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(5)"><strong>Day 5</strong><span>5 个地点 · 驾车</span></button><button class="leaflet-day-tab" onclick="tripLeafletShowView(6)"><strong>Day 6</strong><span>1 个地点 · 驾车</span></button>
+  </div>
+  <div class="leaflet-layout">
+    <div class="leaflet-map-area">
+      <div class="leaflet-title-row">
+        <strong id="leaflet-current-title">全部｜全行程地点</strong>
+        <span id="leaflet-current-count">19 个地点</span>
+      </div>
+      <div id="trip-leaflet-map" class="trip-leaflet-map"></div>
+      <div id="leaflet-map-warning" class="leaflet-map-warning" hidden>地图底图加载失败时，marker 数据仍在右侧列表中；可点击“新窗口打开路线”。</div>
+    </div>
+    <aside class="leaflet-map-side">
+      <h4 id="leaflet-list-title">全部｜全行程地点</h4>
+      <ol id="leaflet-place-list" class="leaflet-place-list"></ol>
+    </aside>
+  </div>
+</section>
+<script>
+(function() {
+  var views = [{"key": "all", "label": "全部", "title": "全部｜全行程地点", "subtitle": "19 个地点", "places": [{"id": "p0", "day": 1, "order": 1, "time": "08:00", "label": "凯夫拉维克国际机场", "name": "Keflavik Airport", "cat": "长途交通", "lat": 63.995043, "lng": -22.623864, "color": "#2563eb"}, {"id": "p1", "day": 2, "order": 1, "time": "", "label": "Selfoss Hostel, Austurvegur 28, Selfoss", "name": "Selfoss Hostel Austurvegur 28", "cat": "住宿", "lat": 63.936932, "lng": -20.993788, "color": "#7c3aed"}, {"id": "p2", "day": 2, "order": 2, "time": "10:30", "label": "Thingvellir National Park", "name": "Thingvellir National Park", "cat": "门票/活动", "lat": 64.278608, "lng": -21.081941, "color": "#7c3aed"}, {"id": "p3", "day": 2, "order": 3, "time": "12:30", "label": "Geysir Hot Spring Area", "name": "Geysir Geothermal Area", "cat": "门票/活动", "lat": 64.313838, "lng": -20.29951, "color": "#7c3aed"}, {"id": "p4", "day": 2, "order": 4, "time": "13:30", "label": "Gullfoss Waterfall", "name": "Gullfoss", "cat": "门票/活动", "lat": 64.314452, "lng": -20.149556, "color": "#7c3aed"}, {"id": "p5", "day": 3, "order": 1, "time": "", "label": "The Barn, Norðurfoss, Vík", "name": "The Barn Norurfoss Vik", "cat": "住宿", "lat": 63.43783, "lng": -19.060041, "color": "#0f766e"}, {"id": "p6", "day": 3, "order": 2, "time": "09:30", "label": "Seljalandsfoss", "name": "Seljalandsfoss", "cat": "门票/活动", "lat": 63.615457, "lng": -19.988169, "color": "#0f766e"}, {"id": "p7", "day": 3, "order": 3, "time": "11:00", "label": "Skogafoss", "name": "Skogafoss", "cat": "门票/活动", "lat": 63.532104, "lng": -19.511292, "color": "#0f766e"}, {"id": "p8", "day": 3, "order": 4, "time": "13:30", "label": "Reynisfjara Black Sand Beach", "name": "Reynisfjara Beach", "cat": "门票/活动", "lat": 63.404426, "lng": -19.058799, "color": "#0f766e"}, {"id": "p9", "day": 4, "order": 1, "time": "", "label": "Old Airline Guesthouse, Hafnarbraut 24, Höfn", "name": "Old Airline Guesthouse Hafnarbraut 24 Hofn", "cat": "住宿", "lat": 64.251263, "lng": -15.209137, "color": "#d97706"}, {"id": "p10", "day": 4, "order": 2, "time": "10:00", "label": "Skaftafell, Vatnajokull National Park", "name": "Skaftafell", "cat": "门票/活动", "lat": 64.016455, "lng": -16.966458, "color": "#d97706"}, {"id": "p11", "day": 4, "order": 3, "time": "12:30", "label": "Jokulsarlon Glacier Lagoon", "name": "Jokulsarlon", "cat": "门票/活动", "lat": 64.078321, "lng": -16.227421, "color": "#d97706"}, {"id": "p12", "day": 4, "order": 4, "time": "13:30", "label": "Diamond Beach, Jokulsarlon", "name": "Diamond Beach", "cat": "门票/活动", "lat": 64.043791, "lng": -16.176337, "color": "#d97706"}, {"id": "p13", "day": 5, "order": 1, "time": "", "label": "Hafnarstræti Hostel, Hafnarstræti, Akureyri", "name": "Hafnarstraeti Hostel Akureyri", "cat": "住宿", "lat": 65.681499, "lng": -18.090905, "color": "#dc2626"}, {"id": "p14", "day": 5, "order": 2, "time": "13:00", "label": "Dettifoss, Vatnajokull National Park", "name": "Dettifoss", "cat": "门票/活动", "lat": 65.814351, "lng": -16.384491, "color": "#dc2626"}, {"id": "p15", "day": 5, "order": 3, "time": "14:30", "label": "Namaskard geothermal area, Myvatn", "name": "Namafjall Hverir", "cat": "门票/活动", "lat": 65.647343, "lng": -16.825068, "color": "#dc2626"}, {"id": "p16", "day": 5, "order": 4, "time": "15:30", "label": "Myvatn Nature Baths", "name": "Myvatn Nature Baths", "cat": "门票/活动", "lat": 65.630395, "lng": -16.848336, "color": "#dc2626"}, {"id": "p17", "day": 5, "order": 5, "time": "17:45", "label": "Godafoss Waterfall", "name": "Godafoss", "cat": "门票/活动", "lat": 65.682816, "lng": -17.550624, "color": "#dc2626"}, {"id": "p18", "day": 6, "order": 1, "time": "", "label": "Start Keflavík Airport Hostel, Keflavík", "name": "Start Keflavik Airport Hostel", "cat": "住宿", "lat": 63.968228, "lng": -22.587524, "color": "#0891b2"}], "route_url": "https://www.google.com/maps/dir/?api=1&origin=63.995043%2C-22.623864&destination=63.968228%2C-22.587524&travelmode=driving&waypoints=63.936932%2C-20.993788%7C64.278608%2C-21.081941%7C64.313838%2C-20.29951%7C64.314452%2C-20.149556%7C63.43783%2C-19.060041%7C63.615457%2C-19.988169%7C63.532104%2C-19.511292%7C63.404426%2C-19.058799%7C64.251263%2C-15.209137%7C64.016455%2C-16.966458%7C64.078321%2C-16.227421%7C64.043791%2C-16.176337%7C65.681499%2C-18.090905%7C65.814351%2C-16.384491%7C65.647343%2C-16.825068%7C65.630395%2C-16.848336%7C65.682816%2C-17.550624"}, {"key": "day1", "label": "Day 1", "title": "Day 1｜凯夫拉维克国际机场", "subtitle": "1 个地点 · 驾车", "places": [{"id": "p0", "day": 1, "order": 1, "time": "08:00", "label": "凯夫拉维克国际机场", "name": "Keflavik Airport", "cat": "长途交通", "lat": 63.995043, "lng": -22.623864, "color": "#2563eb"}], "route_url": "https://www.google.com/maps?q=63.995043%2C-22.623864"}, {"key": "day2", "label": "Day 2", "title": "Day 2｜Selfoss Hostel, Austurvegur 28, Selfoss", "subtitle": "4 个地点 · 驾车", "places": [{"id": "p1", "day": 2, "order": 1, "time": "", "label": "Selfoss Hostel, Austurvegur 28, Selfoss", "name": "Selfoss Hostel Austurvegur 28", "cat": "住宿", "lat": 63.936932, "lng": -20.993788, "color": "#7c3aed"}, {"id": "p2", "day": 2, "order": 2, "time": "10:30", "label": "Thingvellir National Park", "name": "Thingvellir National Park", "cat": "门票/活动", "lat": 64.278608, "lng": -21.081941, "color": "#7c3aed"}, {"id": "p3", "day": 2, "order": 3, "time": "12:30", "label": "Geysir Hot Spring Area", "name": "Geysir Geothermal Area", "cat": "门票/活动", "lat": 64.313838, "lng": -20.29951, "color": "#7c3aed"}, {"id": "p4", "day": 2, "order": 4, "time": "13:30", "label": "Gullfoss Waterfall", "name": "Gullfoss", "cat": "门票/活动", "lat": 64.314452, "lng": -20.149556, "color": "#7c3aed"}], "route_url": "https://www.google.com/maps/dir/?api=1&origin=63.936932%2C-20.993788&destination=64.314452%2C-20.149556&travelmode=driving&waypoints=64.278608%2C-21.081941%7C64.313838%2C-20.29951"}, {"key": "day3", "label": "Day 3", "title": "Day 3｜The Barn, Norðurfoss, Vík", "subtitle": "4 个地点 · 驾车", "places": [{"id": "p5", "day": 3, "order": 1, "time": "", "label": "The Barn, Norðurfoss, Vík", "name": "The Barn Norurfoss Vik", "cat": "住宿", "lat": 63.43783, "lng": -19.060041, "color": "#0f766e"}, {"id": "p6", "day": 3, "order": 2, "time": "09:30", "label": "Seljalandsfoss", "name": "Seljalandsfoss", "cat": "门票/活动", "lat": 63.615457, "lng": -19.988169, "color": "#0f766e"}, {"id": "p7", "day": 3, "order": 3, "time": "11:00", "label": "Skogafoss", "name": "Skogafoss", "cat": "门票/活动", "lat": 63.532104, "lng": -19.511292, "color": "#0f766e"}, {"id": "p8", "day": 3, "order": 4, "time": "13:30", "label": "Reynisfjara Black Sand Beach", "name": "Reynisfjara Beach", "cat": "门票/活动", "lat": 63.404426, "lng": -19.058799, "color": "#0f766e"}], "route_url": "https://www.google.com/maps/dir/?api=1&origin=63.43783%2C-19.060041&destination=63.404426%2C-19.058799&travelmode=driving&waypoints=63.615457%2C-19.988169%7C63.532104%2C-19.511292"}, {"key": "day4", "label": "Day 4", "title": "Day 4｜Old Airline Guesthouse, Hafnarbraut 24, Höfn", "subtitle": "4 个地点 · 驾车", "places": [{"id": "p9", "day": 4, "order": 1, "time": "", "label": "Old Airline Guesthouse, Hafnarbraut 24, Höfn", "name": "Old Airline Guesthouse Hafnarbraut 24 Hofn", "cat": "住宿", "lat": 64.251263, "lng": -15.209137, "color": "#d97706"}, {"id": "p10", "day": 4, "order": 2, "time": "10:00", "label": "Skaftafell, Vatnajokull National Park", "name": "Skaftafell", "cat": "门票/活动", "lat": 64.016455, "lng": -16.966458, "color": "#d97706"}, {"id": "p11", "day": 4, "order": 3, "time": "12:30", "label": "Jokulsarlon Glacier Lagoon", "name": "Jokulsarlon", "cat": "门票/活动", "lat": 64.078321, "lng": -16.227421, "color": "#d97706"}, {"id": "p12", "day": 4, "order": 4, "time": "13:30", "label": "Diamond Beach, Jokulsarlon", "name": "Diamond Beach", "cat": "门票/活动", "lat": 64.043791, "lng": -16.176337, "color": "#d97706"}], "route_url": "https://www.google.com/maps/dir/?api=1&origin=64.251263%2C-15.209137&destination=64.043791%2C-16.176337&travelmode=driving&waypoints=64.016455%2C-16.966458%7C64.078321%2C-16.227421"}, {"key": "day5", "label": "Day 5", "title": "Day 5｜Hafnarstræti Hostel, Hafnarstræti, Akureyri", "subtitle": "5 个地点 · 驾车", "places": [{"id": "p13", "day": 5, "order": 1, "time": "", "label": "Hafnarstræti Hostel, Hafnarstræti, Akureyri", "name": "Hafnarstraeti Hostel Akureyri", "cat": "住宿", "lat": 65.681499, "lng": -18.090905, "color": "#dc2626"}, {"id": "p14", "day": 5, "order": 2, "time": "13:00", "label": "Dettifoss, Vatnajokull National Park", "name": "Dettifoss", "cat": "门票/活动", "lat": 65.814351, "lng": -16.384491, "color": "#dc2626"}, {"id": "p15", "day": 5, "order": 3, "time": "14:30", "label": "Namaskard geothermal area, Myvatn", "name": "Namafjall Hverir", "cat": "门票/活动", "lat": 65.647343, "lng": -16.825068, "color": "#dc2626"}, {"id": "p16", "day": 5, "order": 4, "time": "15:30", "label": "Myvatn Nature Baths", "name": "Myvatn Nature Baths", "cat": "门票/活动", "lat": 65.630395, "lng": -16.848336, "color": "#dc2626"}, {"id": "p17", "day": 5, "order": 5, "time": "17:45", "label": "Godafoss Waterfall", "name": "Godafoss", "cat": "门票/活动", "lat": 65.682816, "lng": -17.550624, "color": "#dc2626"}], "route_url": "https://www.google.com/maps/dir/?api=1&origin=65.681499%2C-18.090905&destination=65.682816%2C-17.550624&travelmode=driving&waypoints=65.814351%2C-16.384491%7C65.647343%2C-16.825068%7C65.630395%2C-16.848336"}, {"key": "day6", "label": "Day 6", "title": "Day 6｜Start Keflavík Airport Hostel, Keflavík", "subtitle": "1 个地点 · 驾车", "places": [{"id": "p18", "day": 6, "order": 1, "time": "", "label": "Start Keflavík Airport Hostel, Keflavík", "name": "Start Keflavik Airport Hostel", "cat": "住宿", "lat": 63.968228, "lng": -22.587524, "color": "#0891b2"}], "route_url": "https://www.google.com/maps?q=63.968228%2C-22.587524"}];
+  var map = null;
+  var layerGroup = null;
+  var markers = [];
+  var initialized = false;
+  var currentViewIndex = 0;
+  var pendingViewIndex = 0;
+  var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, function(ch) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+    });
+  }
+
+  function markerText(point, index, total) {
+    if (total > 26 && point.day) return 'D' + point.day;
+    return index < letters.length ? letters.charAt(index) : String(index + 1);
+  }
+
+  function mapContainerIsReady() {
+    var el = document.getElementById('trip-leaflet-map');
+    if (!el) return false;
+    var rect = el.getBoundingClientRect();
+    return rect.width > 160 && rect.height > 160 && el.offsetParent !== null;
+  }
+
+  function ensureMap() {
+    if (initialized) return true;
+    if (!mapContainerIsReady()) return false;
+    if (typeof L === 'undefined') {
+      var warn = document.getElementById('leaflet-map-warning');
+      if (warn) warn.hidden = false;
+      return false;
+    }
+    map = L.map('trip-leaflet-map', {
+      preferCanvas: true,
+      zoomAnimation: false,
+      markerZoomAnimation: false,
+      inertia: false
+    }).setView([0, 0], 2);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri, TomTom, Garmin, FAO, NOAA, USGS, &copy; OpenStreetMap contributors, and the GIS User Community',
+      maxZoom: 18,
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      keepBuffer: 2
+    }).on('tileerror', function() {
+      var warn = document.getElementById('leaflet-map-warning');
+      if (warn) warn.hidden = false;
+    }).addTo(map);
+
+    layerGroup = L.layerGroup().addTo(map);
+    initialized = true;
+    return true;
+  }
+
+  function refreshLeafletSize() {
+    if (!initialized || !map) return;
+    [60, 180, 360, 720].forEach(function(delay) {
+      setTimeout(function() {
+        map.invalidateSize(true);
+        map.eachLayer(function(layer) {
+          if (layer && layer.redraw) layer.redraw();
+        });
+      }, delay);
+    });
+  }
+
+  function makeIcon(point, index, total) {
+    var label = markerText(point, index, total);
+    return L.divIcon({
+      html: '<div class="leaflet-pin-marker" style="background:' + point.color + '">' + label + '</div>',
+      className: '',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+      popupAnchor: [0, -16]
+    });
+  }
+
+  function renderList(view) {
+    var html = '';
+    view.places.forEach(function(point, index) {
+      var label = markerText(point, index, view.places.length);
+      html += '<li onclick="tripLeafletFocusPlace(' + index + ')">' +
+        '<span class="leaflet-list-pin" style="background:' + point.color + '">' + label + '</span>' +
+        '<div><strong>' + escapeHtml(point.label) + '</strong>' +
+        '<small><em>Day ' + escapeHtml(point.day) + '</em>' + escapeHtml(point.time) + ' · ' + escapeHtml(point.cat) + '</small></div>' +
+        '</li>';
+    });
+    var list = document.getElementById('leaflet-place-list');
+    if (list) list.innerHTML = html;
+  }
+
+  window.tripLeafletShowView = function(index) {
+    currentViewIndex = index || 0;
+    pendingViewIndex = currentViewIndex;
+    var view = views[index] || views[0];
+
+    document.getElementById('leaflet-map-title').textContent = '🗺 ' + view.title;
+    document.getElementById('leaflet-map-subtitle').textContent = view.subtitle + ' · marker 和路线由页面自己绘制';
+    document.getElementById('leaflet-current-title').textContent = view.title;
+    document.getElementById('leaflet-current-count').textContent = view.places.length + ' 个地点';
+    document.getElementById('leaflet-list-title').textContent = view.title;
+    document.getElementById('leaflet-route-link').href = view.route_url;
+
+    document.querySelectorAll('.leaflet-day-tab').forEach(function(btn, i) {
+      btn.classList.toggle('active', i === index);
+    });
+
+    renderList(view);
+
+    if (!ensureMap()) return;
+    refreshLeafletSize();
+    layerGroup.clearLayers();
+    markers = [];
+
+    var latlngs = [];
+    view.places.forEach(function(point, i) {
+      var latlng = [point.lat, point.lng];
+      var marker = L.marker(latlng, {icon: makeIcon(point, i, view.places.length)})
+        .bindPopup('<strong>' + escapeHtml(point.label) + '</strong><br>Day ' + escapeHtml(point.day) + ' · ' + escapeHtml(point.time) + '<br>' + escapeHtml(point.cat));
+      marker.addTo(layerGroup);
+      markers.push(marker);
+      latlngs.push(latlng);
+    });
+
+    var byDay = {};
+    view.places.forEach(function(point) {
+      if (!byDay[point.day]) byDay[point.day] = [];
+      byDay[point.day].push(point);
+    });
+    Object.keys(byDay).forEach(function(day) {
+      var pts = byDay[day];
+      if (pts.length > 1) {
+        L.polyline(pts.map(function(p) { return [p.lat, p.lng]; }), {
+          color: pts[0].color,
+          weight: 3,
+          opacity: 0.78
+        }).addTo(layerGroup);
+      }
+    });
+
+    refreshLeafletSize();
+    if (latlngs.length === 1) {
+      map.setView(latlngs[0], 12);
+    } else if (latlngs.length > 1) {
+      map.fitBounds(latlngs, {padding: [35, 35], maxZoom: index === 0 ? 8 : 12});
+    }
+    refreshLeafletSize();
+  };
+
+  window.tripLeafletFocusPlace = function(index) {
+    if (!ensureMap()) return;
+    var marker = markers[index];
+    if (marker) {
+      map.setView(marker.getLatLng(), 12);
+      marker.openPopup();
+    }
+  };
+
+  window.tripLeafletRefreshMap = function() {
+    var index = pendingViewIndex || currentViewIndex || 0;
+    if (!mapContainerIsReady()) {
+      [120, 300, 700, 1200].forEach(function(delay) {
+        setTimeout(function() {
+          if (mapContainerIsReady()) window.tripLeafletRefreshMap();
+        }, delay);
+      });
+      return;
+    }
+    window.tripLeafletShowView(index);
+    refreshLeafletSize();
+  };
+
+  if ('ResizeObserver' in window) {
+    var mapElForResize = document.getElementById('trip-leaflet-map');
+    if (mapElForResize) {
+      var ro = new ResizeObserver(function() {
+        window.tripLeafletRefreshMap();
+      });
+      ro.observe(mapElForResize);
+    }
+  }
+
+  if ('IntersectionObserver' in window) {
+    var wrapEl = document.getElementById('trip-map-wrap');
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          window.tripLeafletRefreshMap();
+        }
+      });
+    }, {threshold: 0.05});
+    if (wrapEl) observer.observe(wrapEl);
+  }
+
+  window.tripMapShowAll = function() {};
+  window.tripMapShowSegment = function(fLat, fLng, tLat, tLng, el) {
+    if (el) el.classList.add('map-active');
+    var wrap = document.getElementById('trip-map-wrap');
+    if (wrap) wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+  };
+
+  renderList(views[0]);
+  [80, 250, 650, 1200].forEach(function(delay) { setTimeout(window.tripLeafletRefreshMap, delay); });
+})();
+</script>
+<div class="add-all-calendar"><a class="cta-button" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66aaZ5riv5Yaw5bKb6KGM56iLDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTEtMC00ODBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwMVQwODAwMDANCkRURU5EOjIwMjYwODAxVDIyMDAwMA0KU1VNTUFSWTrpppnmuK9IS0cg4oaSIOi1q+WwlOi+m+WfukhFTCDihpIg5Yev5aSr5ouJ57u05YWLS0VG77yI6Iqs5YWw6IiqDQog56m677yM5b6A6L+U77yJDQpMT0NBVElPTjrlh6/lpKvmi4nnu7TlhYvlm73pmYXmnLrlnLoNCkRFU0NSSVBUSU9OOuiKrOWFsOiIquepuu+8jOe7j+i1q+WwlOi+m+Wfuui9rOacuu+8jOmjnuihjCvovazmnLrnuqYyNmg0NW0NCiDjgILlvoDov5TmgLvku7fnuqbCpTc1MDAv5Lq644CCOOaciDHml6Xlh7rlj5HvvIw45pyIMuaXpeaKtei+vuWGsOWym++8iA0KIOaXtuW3ri04aO+8ieOAguWunumZhemihOiuouaXtuS7t+agvOS7peaQuueoi+aYvuekuuS4uuWHhuOAgg0KRU5EOlZFVkVOVA0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS0yLTAtNjMwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDJUMTAzMDAwDQpEVEVORDoyMDI2MDgwMlQxMjAwMDANClNVTU1BUlk66L6b5qC857u05Yip5bCU5Zu95a625YWs5ZutIChUaGluZ3ZlbGxpcikNCkxPQ0FUSU9OOlRoaW5ndmVsbGlyIE5hdGlvbmFsIFBhcmsNCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuu+8jOWBnOi9pui0uee6pjc1MElTSyjCpTUwKeOAgg0KRU5EOlZFVkVOVA0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS0yLTEtNzUwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDJUMTIzMDAwDQpEVEVORDoyMDI2MDgwMlQxMzE1MDANClNVTU1BUlk655uW5q2H5bCU6Ze05q2H5rOJIChHZXlzaXIpDQpMT0NBVElPTjpHZXlzaXIgSG90IFNwcmluZyBBcmVhDQpERVNDUklQVElPTjrlhY3otLnlhaXlnLrjgIINCkVORDpWRVZFTlQNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tMi0yLTgxMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODAyVDEzMzAwMA0KRFRFTkQ6MjAyNjA4MDJUMTQxNTAwDQpTVU1NQVJZOum7hOmHkeeAkeW4gyAoR3VsbGZvc3MpDQpMT0NBVElPTjpHdWxsZm9zcyBXYXRlcmZhbGwNCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuuOAgg0KRU5EOlZFVkVOVA0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS0zLTAtNTcwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDNUMDkzMDAwDQpEVEVORDoyMDI2MDgwM1QxMDMwMDANClNVTU1BUlk65aGe6YeM6ZuF5YWw54CR5biDICsgR2xqdWZyYWJ1aemakOenmOeAkeW4gyAoU2VsamFsYW5kc2Zvc3MpDQpMT0NBVElPTjpTZWxqYWxhbmRzZm9zcw0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy677yM5YGc6L2m6LS557qmNzAwSVNL44CC56m/6Zuo6KGj77yB5Lya6KKr5reL5rm/DQog44CCDQpFTkQ6VkVWRU5UDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTMtMS02NjBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwM1QxMTAwMDANCkRURU5EOjIwMjYwODAzVDExNDUwMA0KU1VNTUFSWTrmlq/np5HliqDngJHluIMgKFNrb2dhZm9zcykNCkxPQ0FUSU9OOlNrb2dhZm9zcw0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CCDQpFTkQ6VkVWRU5UDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTMtMi04MTBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwM1QxMzMwMDANCkRURU5EOjIwMjYwODAzVDE0MzAwMA0KU1VNTUFSWTrpm7flsLzmlq/pu5Hmspnmu6kgKFJleW5pc2ZqYXJhKQ0KTE9DQVRJT046UmV5bmlzZmphcmEgQmxhY2sgU2FuZCBCZWFjaA0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CC5Y2x6Zmp77ya5YG36KKt5beo5rWq5Y+v5oqK5Lq65Y236LWw77yM5Yqh5b+FDQog6L+c56a75rC06L656Iez5bCRMzDnsbPjgIINCkVORDpWRVZFTlQNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNC0wLTYwMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA0VDEwMDAwMA0KRFRFTkQ6MjAyNjA4MDRUMTEzMDAwDQpTVU1NQVJZOuaWr+WNoeWkq+WhlOWxsS9TdmFydGlmb3Nz6buR6Imy546E5q2m5bKp54CR5biDDQpMT0NBVElPTjpTa2FmdGFmZWxsXCwgVmF0bmFqb2t1bGwgTmF0aW9uYWwgUGFyaw0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CCU3ZhcnRpZm9zc+W+kuatpeW+gOi/lOe6pjEuNWgvM2tt5LiK5Z2h44CCDQpFTkQ6VkVWRU5UDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTQtMS03NTBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwNFQxMjMwMDANCkRURU5EOjIwMjYwODA0VDEzMzAwMA0KU1VNTUFSWTrmnbDlj6TmspnpvpnlhrDmsrPmuZYgKEpva3Vsc2FybG9uKQ0KTE9DQVRJT046Sm9rdWxzYXJsb24gR2xhY2llciBMYWdvb24NCkRFU0NSSVBUSU9OOuWFjei0ueWPguinguOAgua4uOiIueWPr+mAie+8iOe6pjQwMOWFgy/kurrvvIzpooTnrpfljp/lm6Dlu7oNCiDorq7ot7Pov4fvvInjgIINCkVORDpWRVZFTlQNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNC0yLTgxMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA0VDEzMzAwMA0KRFRFTkQ6MjAyNjA4MDRUMTQwMDAwDQpTVU1NQVJZOumSu+efs+aymea7qSAoRGlhbW9uZCBCZWFjaCkNCkxPQ0FUSU9OOkRpYW1vbmQgQmVhY2hcLCBKb2t1bHNhcmxvbg0KREVTQ1JJUFRJT0465Yaw5rKz5rmW5a+56Z2i77yM5q2l6KGM6L+H5qGl5Y2z6L6+44CC5YWN6LS544CCDQpFTkQ6VkVWRU5UDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTUtMC03ODBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwNVQxMzAwMDANCkRURU5EOjIwMjYwODA1VDEzNDUwMA0KU1VNTUFSWTrpu5vmj5DngJHluIMgKERldHRpZm9zcykNCkxPQ0FUSU9OOkRldHRpZm9zc1wsIFZhdG5ham9rdWxsIE5hdGlvbmFsIFBhcmsNCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuuOAguS7jjHlj7flhazot6/mnInlspTot6/vvIzkuJzlsrjopb/lsrjlnYflj6/liLANCiDjgIINCkVORDpWRVZFTlQNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNS0xLTg3MEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA1VDE0MzAwMA0KRFRFTkQ6MjAyNjA4MDVUMTUwMDAwDQpTVU1NQVJZOk5hbWFmamFsbCBIdmVyaXLlnLDng63ljLoNCkxPQ0FUSU9OOk5hbWFza2FyZCBnZW90aGVybWFsIGFyZWFcLCBNeXZhdG4NCkRFU0NSSVBUSU9OOuWFjei0ueOAguehq+ejuuWRs+mHje+8jOWcsOmdouW+iOeDq++8jOi1sOacqOagiOmBk+OAgg0KRU5EOlZFVkVOVA0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS01LTItOTMwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDVUMTUzMDAwDQpEVEVORDoyMDI2MDgwNVQxNzAwMDANClNVTU1BUlk657Gz5rmW5rip5rOJIE15dmF0biBOYXR1cmUgQmF0aHPvvIjlj6/pgInvvIkNCkxPQ0FUSU9OOk15dmF0biBOYXR1cmUgQmF0aHMNCkRFU0NSSVBUSU9OOue6pjU1MDBJU0sowqUyNzUpL+S6uu+8jOWPr+mAiemhueebruOAguWmguS4jeWOu+WPr+aPkOWJjeWOu0cNCiBvZGFmb3Nz44CCDQpFTkQ6VkVWRU5UDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTUtMy0xMDY1QHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDVUMTc0NTAwDQpEVEVORDoyMDI2MDgwNVQxODE1MDANClNVTU1BUlk65LyX56We54CR5biDIChHb2RhZm9zcykNCkxPQ0FUSU9OOkdvZGFmb3NzIFdhdGVyZmFsbA0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CCDQpFTkQ6VkVWRU5UDQpFTkQ6VkNBTEVOREFS" download="trip_calendar.ics">📅 一键导入全部行程到日历</a><span class="cta-hint">也可以直接使用同目录下的 ./trip-plan-workspace/trip_calendar.ics 文件导入</span></div>
+<div class="day-card" id="day-1">
+<div class="stub"><span class="stub-num">第1天</span></div>
+<div class="body">
+<h3><span class="day-date">8月1日 周六</span></h3>
+<ol class="timeline">
+<li><span class="time">08:00–22:00</span> <span class="desc">香港HKG → 赫尔辛基HEL → 凯夫拉维克KEF（芬兰航空，往返）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66aaZ5rivSEtHIOKGkiDotavlsJTovpvln7pIRUwg4oaSIOWHr+Wkq+aLiee7tOWFi0tFRu+8iOiKrOWFsOiIquepuu+8jOW+gOi/lO+8iQ0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS0xLTAtNDgwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDFUMDgwMDAwDQpEVEVORDoyMDI2MDgwMVQyMjAwMDANClNVTU1BUlk66aaZ5rivSEtHIOKGkiDotavlsJTovpvln7pIRUwg4oaSIOWHr+Wkq+aLiee7tOWFi0tFRu+8iOiKrOWFsOiIqg0KIOepuu+8jOW+gOi/lO+8iQ0KTE9DQVRJT0465Yev5aSr5ouJ57u05YWL5Zu96ZmF5py65Zy6DQpERVNDUklQVElPTjroiqzlhbDoiKrnqbrvvIznu4/otavlsJTovpvln7rovazmnLrvvIzpo57ooYwr6L2s5py657qmMjZoNDVtDQog44CC5b6A6L+U5oC75Lu357qmwqU3NTAwL+S6uuOAgjjmnIgx5pel5Ye65Y+R77yMOOaciDLml6XmirXovr7lhrDlspvvvIgNCiDml7blt64tOGjvvInjgILlrp7pmYXpooTorqLml7bku7fmoLzku6XmkLrnqIvmmL7npLrkuLrlh4bjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a><a class="mini-action booking" href="https://www.ctrip.com" target="_blank" rel="noopener">🎫 携程</a></span></li>
+</ol>
+<p class="day-total">当日有安排活动合计约 14.0 小时</p>
+</div></div>
+<div class="day-card" id="day-2">
+<div class="stub"><span class="stub-num">第2天</span></div>
+<div class="body">
+<h3><span class="day-date">8月2日 周日</span></h3>
+<ol class="timeline">
+<li><span class="time">10:30–12:00</span> <span class="desc">辛格维利尔国家公园 (Thingvellir)</span><span class="rating">⭐ 4.7（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66L6b5qC857u05Yip5bCU5Zu95a625YWs5ZutIChUaGluZ3ZlbGxpcikNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tMi0wLTYzMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODAyVDEwMzAwMA0KRFRFTkQ6MjAyNjA4MDJUMTIwMDAwDQpTVU1NQVJZOui+m+agvOe7tOWIqeWwlOWbveWutuWFrOWbrSAoVGhpbmd2ZWxsaXIpDQpMT0NBVElPTjpUaGluZ3ZlbGxpciBOYXRpb25hbCBQYXJrDQpERVNDUklQVElPTjrlhY3otLnlhaXlnLrvvIzlgZzovabotLnnuqY3NTBJU0sowqU1MCnjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="64.278608" data-from-lng="-21.081941" data-to-lat="64.313838" data-to-lng="-20.29951" onclick="if(event.target.tagName!=='A') tripMapShowSegment(64.278608,-21.081941,64.313838,-20.29951,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Thingvellir%20National%20Park&amp;destination=Geysir%20Hot%20Spring%20Area&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Thingvellir National Park → Geysir Hot Spring Area（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">12:30–13:15</span> <span class="desc">盖歇尔间歇泉 (Geysir)</span><span class="rating">⭐ 4.6（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU655uW5q2H5bCU6Ze05q2H5rOJIChHZXlzaXIpDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTItMS03NTBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwMlQxMjMwMDANCkRURU5EOjIwMjYwODAyVDEzMTUwMA0KU1VNTUFSWTrnm5bmrYflsJTpl7TmrYfms4kgKEdleXNpcikNCkxPQ0FUSU9OOkdleXNpciBIb3QgU3ByaW5nIEFyZWENCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuuOAgg0KRU5EOlZFVkVOVA0KRU5EOlZDQUxFTkRBUg==" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="64.313838" data-from-lng="-20.29951" data-to-lat="64.314452" data-to-lng="-20.149556" onclick="if(event.target.tagName!=='A') tripMapShowSegment(64.313838,-20.29951,64.314452,-20.149556,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Geysir%20Hot%20Spring%20Area&amp;destination=Gullfoss%20Waterfall&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Geysir Hot Spring Area → Gullfoss Waterfall（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">13:30–14:15</span> <span class="desc">黄金瀑布 (Gullfoss)</span><span class="rating">⭐ 4.8（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66buE6YeR54CR5biDIChHdWxsZm9zcykNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tMi0yLTgxMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODAyVDEzMzAwMA0KRFRFTkQ6MjAyNjA4MDJUMTQxNTAwDQpTVU1NQVJZOum7hOmHkeeAkeW4gyAoR3VsbGZvc3MpDQpMT0NBVElPTjpHdWxsZm9zcyBXYXRlcmZhbGwNCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuuOAgg0KRU5EOlZFVkVOVA0KRU5EOlZDQUxFTkRBUg==" download="event.ics">📅 加入日历</a></span></li>
+</ol>
+<p class="day-total">当日有安排活动合计约 3.0 小时</p>
+</div></div>
+<div class="day-card" id="day-3">
+<div class="stub"><span class="stub-num">第3天</span></div>
+<div class="body">
+<h3><span class="day-date">8月3日 周一</span></h3>
+<ol class="timeline">
+<li><span class="time">09:30–10:30</span> <span class="desc">塞里雅兰瀑布 + Gljufrabui隐秘瀑布 (Seljalandsfoss)</span><span class="rating">⭐ 4.7（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU65aGe6YeM6ZuF5YWw54CR5biDICsgR2xqdWZyYWJ1aemakOenmOeAkeW4gyAoU2VsamFsYW5kc2Zvc3MpDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTMtMC01NzBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwM1QwOTMwMDANCkRURU5EOjIwMjYwODAzVDEwMzAwMA0KU1VNTUFSWTrloZ7ph4zpm4XlhbDngJHluIMgKyBHbGp1ZnJhYnVp6ZqQ56eY54CR5biDIChTZWxqYWxhbmRzZm9zcykNCkxPQ0FUSU9OOlNlbGphbGFuZHNmb3NzDQpERVNDUklQVElPTjrlhY3otLnlhaXlnLrvvIzlgZzovabotLnnuqY3MDBJU0vjgILnqb/pm6jooaPvvIHkvJrooqvmt4vmub8NCiDjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="63.615457" data-from-lng="-19.988169" data-to-lat="63.532104" data-to-lng="-19.511292" onclick="if(event.target.tagName!=='A') tripMapShowSegment(63.615457,-19.988169,63.532104,-19.511292,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Seljalandsfoss&amp;destination=Skogafoss&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Seljalandsfoss → Skogafoss（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">11:00–11:45</span> <span class="desc">斯科加瀑布 (Skogafoss)</span><span class="rating">⭐ 4.8（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU65pav56eR5Yqg54CR5biDIChTa29nYWZvc3MpDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTMtMS02NjBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwM1QxMTAwMDANCkRURU5EOjIwMjYwODAzVDExNDUwMA0KU1VNTUFSWTrmlq/np5HliqDngJHluIMgKFNrb2dhZm9zcykNCkxPQ0FUSU9OOlNrb2dhZm9zcw0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CCDQpFTkQ6VkVWRU5UDQpFTkQ6VkNBTEVOREFS" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="63.532104" data-from-lng="-19.511292" data-to-lat="63.404426" data-to-lng="-19.058799" onclick="if(event.target.tagName!=='A') tripMapShowSegment(63.532104,-19.511292,63.404426,-19.058799,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Skogafoss&amp;destination=Reynisfjara%20Black%20Sand%20Beach&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Skogafoss → Reynisfjara Black Sand Beach（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">13:30–14:30</span> <span class="desc">雷尼斯黑沙滩 (Reynisfjara)</span><span class="rating">⭐ 4.7（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66Zu35bC85pav6buR5rKZ5rupIChSZXluaXNmamFyYSkNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tMy0yLTgxMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODAzVDEzMzAwMA0KRFRFTkQ6MjAyNjA4MDNUMTQzMDAwDQpTVU1NQVJZOumbt+WwvOaWr+m7keaymea7qSAoUmV5bmlzZmphcmEpDQpMT0NBVElPTjpSZXluaXNmamFyYSBCbGFjayBTYW5kIEJlYWNoDQpERVNDUklQVElPTjrlhY3otLnlhaXlnLrjgILljbHpmanvvJrlgbfooq3lt6jmtarlj6/miorkurrljbfotbDvvIzliqHlv4UNCiDov5znprvmsLTovrnoh7PlsJEzMOexs+OAgg0KRU5EOlZFVkVOVA0KRU5EOlZDQUxFTkRBUg==" download="event.ics">📅 加入日历</a></span></li>
+</ol>
+<p class="day-total">当日有安排活动合计约 2.8 小时</p>
+</div></div>
+<div class="day-card" id="day-4">
+<div class="stub"><span class="stub-num">第4天</span></div>
+<div class="body">
+<h3><span class="day-date">8月4日 周二</span></h3>
+<ol class="timeline">
+<li><span class="time">10:00–11:30</span> <span class="desc">斯卡夫塔山/Svartifoss黑色玄武岩瀑布</span><span class="rating">⭐ 4.6（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU65pav5Y2h5aSr5aGU5bGxL1N2YXJ0aWZvc3Ppu5HoibLnjoTmrablsqnngJHluIMNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNC0wLTYwMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA0VDEwMDAwMA0KRFRFTkQ6MjAyNjA4MDRUMTEzMDAwDQpTVU1NQVJZOuaWr+WNoeWkq+WhlOWxsS9TdmFydGlmb3Nz6buR6Imy546E5q2m5bKp54CR5biDDQpMT0NBVElPTjpTa2FmdGFmZWxsXCwgVmF0bmFqb2t1bGwgTmF0aW9uYWwgUGFyaw0KREVTQ1JJUFRJT0465YWN6LS55YWl5Zy644CCU3ZhcnRpZm9zc+W+kuatpeW+gOi/lOe6pjEuNWgvM2tt5LiK5Z2h44CCDQpFTkQ6VkVWRU5UDQpFTkQ6VkNBTEVOREFS" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="64.016455" data-from-lng="-16.966458" data-to-lat="64.078321" data-to-lng="-16.227421" onclick="if(event.target.tagName!=='A') tripMapShowSegment(64.016455,-16.966458,64.078321,-16.227421,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Skaftafell%2C%20Vatnajokull%20National%20Park&amp;destination=Jokulsarlon%20Glacier%20Lagoon&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Skaftafell, Vatnajokull National Park → Jokulsarlon Glacier Lagoon（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">12:30–13:30</span> <span class="desc">杰古沙龙冰河湖 (Jokulsarlon)</span><span class="rating">⭐ 4.9（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU65p2w5Y+k5rKZ6b6Z5Yaw5rKz5rmWIChKb2t1bHNhcmxvbikNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNC0xLTc1MEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA0VDEyMzAwMA0KRFRFTkQ6MjAyNjA4MDRUMTMzMDAwDQpTVU1NQVJZOuadsOWPpOaymem+meWGsOays+a5liAoSm9rdWxzYXJsb24pDQpMT0NBVElPTjpKb2t1bHNhcmxvbiBHbGFjaWVyIExhZ29vbg0KREVTQ1JJUFRJT0465YWN6LS55Y+C6KeC44CC5ri46Ii55Y+v6YCJ77yI57qmNDAw5YWDL+S6uu+8jOmihOeul+WOn+WboOW7ug0KIOiurui3s+i/h++8ieOAgg0KRU5EOlZFVkVOVA0KRU5EOlZDQUxFTkRBUg==" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="64.078321" data-from-lng="-16.227421" data-to-lat="64.043791" data-to-lng="-16.176337" onclick="if(event.target.tagName!=='A') tripMapShowSegment(64.078321,-16.227421,64.043791,-16.176337,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Jokulsarlon%20Glacier%20Lagoon&amp;destination=Diamond%20Beach%2C%20Jokulsarlon&amp;travelmode=walking" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Jokulsarlon Glacier Lagoon → Diamond Beach, Jokulsarlon（步行）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">13:30–14:00</span> <span class="desc">钻石沙滩 (Diamond Beach)</span><span class="rating">⭐ 4.8（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66ZK755+z5rKZ5rupIChEaWFtb25kIEJlYWNoKQ0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS00LTItODEwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDRUMTMzMDAwDQpEVEVORDoyMDI2MDgwNFQxNDAwMDANClNVTU1BUlk66ZK755+z5rKZ5rupIChEaWFtb25kIEJlYWNoKQ0KTE9DQVRJT046RGlhbW9uZCBCZWFjaFwsIEpva3Vsc2FybG9uDQpERVNDUklQVElPTjrlhrDmsrPmuZblr7npnaLvvIzmraXooYzov4fmoaXljbPovr7jgILlhY3otLnjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a></span></li>
+</ol>
+<p class="day-total">当日有安排活动合计约 3.0 小时</p>
+</div></div>
+<div class="day-card" id="day-5">
+<div class="stub"><span class="stub-num">第5天</span></div>
+<div class="body">
+<h3><span class="day-date">8月5日 周三</span></h3>
+<ol class="timeline">
+<li><span class="time">13:00–13:45</span> <span class="desc">黛提瀑布 (Dettifoss)</span><span class="rating">⭐ 4.8（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU66bub5o+Q54CR5biDIChEZXR0aWZvc3MpDQpCRUdJTjpWRVZFTlQNClVJRDppdGVtLTUtMC03ODBAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwNVQxMzAwMDANCkRURU5EOjIwMjYwODA1VDEzNDUwMA0KU1VNTUFSWTrpu5vmj5DngJHluIMgKERldHRpZm9zcykNCkxPQ0FUSU9OOkRldHRpZm9zc1wsIFZhdG5ham9rdWxsIE5hdGlvbmFsIFBhcmsNCkRFU0NSSVBUSU9OOuWFjei0ueWFpeWcuuOAguS7jjHlj7flhazot6/mnInlspTot6/vvIzkuJzlsrjopb/lsrjlnYflj6/liLANCiDjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="65.814351" data-from-lng="-16.384491" data-to-lat="65.647343" data-to-lng="-16.825068" onclick="if(event.target.tagName!=='A') tripMapShowSegment(65.814351,-16.384491,65.647343,-16.825068,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Dettifoss%2C%20Vatnajokull%20National%20Park&amp;destination=Namaskard%20geothermal%20area%2C%20Myvatn&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Dettifoss, Vatnajokull National Park → Namaskard geothermal area, Myvatn（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">14:30–15:00</span> <span class="desc">Namafjall Hverir地热区</span><span class="rating">⭐ 4.5（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU6TmFtYWZqYWxsIEh2ZXJpcuWcsOeDreWMug0KQkVHSU46VkVWRU5UDQpVSUQ6aXRlbS01LTEtODcwQHRyYXZlbC1wbGFubmVyDQpEVFNUQU1QOjIwMjYwNzAyVDEwMTMzNFoNCkRUU1RBUlQ6MjAyNjA4MDVUMTQzMDAwDQpEVEVORDoyMDI2MDgwNVQxNTAwMDANClNVTU1BUlk6TmFtYWZqYWxsIEh2ZXJpcuWcsOeDreWMug0KTE9DQVRJT046TmFtYXNrYXJkIGdlb3RoZXJtYWwgYXJlYVwsIE15dmF0bg0KREVTQ1JJUFRJT0465YWN6LS544CC56Gr56O65ZGz6YeN77yM5Zyw6Z2i5b6I54Or77yM6LWw5pyo5qCI6YGT44CCDQpFTkQ6VkVWRU5UDQpFTkQ6VkNBTEVOREFS" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="65.647343" data-from-lng="-16.825068" data-to-lat="65.630395" data-to-lng="-16.848336" onclick="if(event.target.tagName!=='A') tripMapShowSegment(65.647343,-16.825068,65.630395,-16.848336,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Namaskard%20geothermal%20area%2C%20Myvatn&amp;destination=Myvatn%20Nature%20Baths&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Namaskard geothermal area, Myvatn → Myvatn Nature Baths（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">15:30–17:00</span> <span class="desc">米湖温泉 Myvatn Nature Baths（可选）</span><span class="rating">⭐ 4.5（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU657Gz5rmW5rip5rOJIE15dmF0biBOYXR1cmUgQmF0aHPvvIjlj6/pgInvvIkNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNS0yLTkzMEB0cmF2ZWwtcGxhbm5lcg0KRFRTVEFNUDoyMDI2MDcwMlQxMDEzMzRaDQpEVFNUQVJUOjIwMjYwODA1VDE1MzAwMA0KRFRFTkQ6MjAyNjA4MDVUMTcwMDAwDQpTVU1NQVJZOuexs+a5lua4qeaziSBNeXZhdG4gTmF0dXJlIEJhdGhz77yI5Y+v6YCJ77yJDQpMT0NBVElPTjpNeXZhdG4gTmF0dXJlIEJhdGhzDQpERVNDUklQVElPTjrnuqY1NTAwSVNLKMKlMjc1KS/kurrvvIzlj6/pgInpobnnm67jgILlpoLkuI3ljrvlj6/mj5DliY3ljrtHDQogb2RhZm9zc+OAgg0KRU5EOlZFVkVOVA0KRU5EOlZDQUxFTkRBUg==" download="event.ics">📅 加入日历</a></span></li>
+<li class="nav-leg" data-from-lat="65.630395" data-from-lng="-16.848336" data-to-lat="65.682816" data-to-lng="-17.550624" onclick="if(event.target.tagName!=='A') tripMapShowSegment(65.630395,-16.848336,65.682816,-17.550624,this)" style="cursor:pointer" title="点击在上方地图中查看这段路线"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Myvatn%20Nature%20Baths&amp;destination=Godafoss%20Waterfall&amp;travelmode=driving" target="_blank" rel="noopener" onclick="event.stopPropagation()">🧭 Myvatn Nature Baths → Godafoss Waterfall（驾车）</a><span class="map-seg-hint">↑ 地图</span></li>
+<li><span class="time">17:45–18:15</span> <span class="desc">众神瀑布 (Godafoss)</span><span class="rating">⭐ 4.7（Google Maps）</span><span class="item-actions"><a class="mini-action" href="data:text/calendar;charset=utf-8;base64,QkVHSU46VkNBTEVOREFSDQpWRVJTSU9OOjIuMA0KUFJPRElEOi0vL3RyYXZlbC1wbGFubmVyLy90cmlwLy9DTg0KQ0FMU0NBTEU6R1JFR09SSUFODQpYLVdSLUNBTE5BTUU65LyX56We54CR5biDIChHb2RhZm9zcykNCkJFR0lOOlZFVkVOVA0KVUlEOml0ZW0tNS0zLTEwNjVAdHJhdmVsLXBsYW5uZXINCkRUU1RBTVA6MjAyNjA3MDJUMTAxMzM0Wg0KRFRTVEFSVDoyMDI2MDgwNVQxNzQ1MDANCkRURU5EOjIwMjYwODA1VDE4MTUwMA0KU1VNTUFSWTrkvJfnpZ7ngJHluIMgKEdvZGFmb3NzKQ0KTE9DQVRJT046R29kYWZvc3MgV2F0ZXJmYWxsDQpERVNDUklQVElPTjrlhY3otLnlhaXlnLrjgIINCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVI=" download="event.ics">📅 加入日历</a></span></li>
+</ol>
+<p class="day-total">当日有安排活动合计约 3.2 小时</p>
+</div></div>

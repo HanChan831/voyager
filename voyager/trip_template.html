@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><!-- PLACEHOLDER:TITLE -->出行计划</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  /*
+    设计基调：登机牌 / 护照内页的视觉语言——这是"旅行"这件事本身自带的视觉素材，
+    比通用的 SaaS 仪表盘风格更贴题。数据（时间、价格、天数）一律用等宽字体排版，
+    呈现票根上对齐数字的质感；每天的行程卡片做成"票根撕开"的造型（左侧票根 + 虚线
+    撕口 + 右侧主体）。配色避开"奶油色+赤陶""纯黑+荧光绿"这类网上最常见的 AI 生成
+    默认配色，改用深靛蓝 + 琥珀 + 墨绿，呼应护照内页烫金字与登机牌印章的颜色。
+  */
+  :root {
+    --navy: #16232e;
+    --navy-soft: #243446;
+    --paper: #f4f5f0;
+    --card: #ffffff;
+    --amber: #d9821f;
+    --amber-soft: #f6e4c8;
+    --teal: #1f6f64;
+    --teal-soft: #dcece8;
+    --rust: #c0432c;
+    --rust-soft: #f6e2dc;
+    --line: #dfe1d8;
+    --ink: #1c211d;
+    --ink-soft: #5c655f;
+    --serif: "Source Han Serif SC", "Songti SC", "STSong", ui-serif, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 17px; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- 顶部操作栏：最显眼位置放打印/分享按钮 ---------- */
+  .action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--navy-soft);
+  }
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 22px;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: var(--sans);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .action-btn.primary { background: var(--amber); color: #1c211d; }
+
+  /* ---------- 顶部：护照封面式标题区 ---------- */
+  header.cover {
+    background: var(--navy);
+    background-image: radial-gradient(circle at 92% -10%, rgba(217,130,31,0.35), transparent 45%);
+    color: #fdfcf8;
+    padding: 34px 22px 26px;
+  }
+  header.cover .kicker {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 10px;
+  }
+  header.cover h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(1.7rem, 4.8vw, 2.4rem);
+    margin: 0 0 18px;
+    letter-spacing: 0.01em;
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 14px;
+    border-top: 1px dashed rgba(255,255,255,0.25);
+    padding-top: 16px;
+  }
+  .field-row .field .k {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 3px;
+  }
+  .field-row .field .v {
+    font-family: var(--mono);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #fdfcf8;
+  }
+
+  /* ---------- 标签导航：票根样式 ---------- */
+  nav.tabs {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    gap: 2px;
+    padding: 10px 14px 0;
+    background: var(--paper);
+    overflow-x: auto;
+    border-bottom: 1px solid var(--line);
+  }
+  nav.tabs button {
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    border-bottom: none;
+    background: var(--card);
+    padding: 10px 18px;
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+    font-size: 0.98rem;
+    font-family: var(--sans);
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  nav.tabs button.active {
+    background: var(--paper);
+    color: var(--navy);
+    font-weight: 700;
+    border-color: var(--line);
+    position: relative;
+    top: 1px;
+  }
+
+  main { max-width: 760px; margin: 0 auto; padding: 22px 18px 70px; }
+
+  section.tab-content { display: none; }
+  section.tab-content.active { display: block; }
+
+  h2 {
+    font-family: var(--serif);
+    color: var(--navy);
+    font-size: 1.55rem;
+    margin: 0 0 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  h2::after { content: ""; flex: 1; border-bottom: 1px dashed var(--line); }
+  h3 { font-family: var(--sans); margin-top: 22px; }
+
+  .lede { color: var(--ink-soft); font-size: 1.02rem; margin: -6px 0 18px; }
+
+  /* ---------- 概览统计 ---------- */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin: 4px 0 18px;
+  }
+  .overview-grid .stat {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .overview-grid .stat .label { font-size: 0.86rem; color: var(--ink-soft); margin-bottom: 4px; }
+  .overview-grid .stat .value { font-family: var(--mono); font-size: 1.35rem; font-weight: 700; color: var(--navy); }
+  .overview-grid .stat.accent .value { color: var(--amber); }
+
+  /* ---------- 天气小卡片（概览页） ---------- */
+  .weather-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin: 18px 0;
+  }
+  .weather-card:empty { display: none; }
+  .weather-card h4 { margin: 0 0 8px; font-family: var(--sans); color: var(--navy); }
+  .weather-card .weather-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .weather-card .weather-day {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    min-width: 110px;
+  }
+  .weather-card .weather-day .d { font-size: 0.8rem; color: var(--ink-soft); }
+  .weather-card .weather-day .t { font-family: var(--mono); font-weight: 700; color: var(--navy); font-size: 1.05rem; }
+  .weather-card .weather-tip { font-size: 0.92rem; color: var(--ink-soft); }
+
+  /* ---------- 行程：票根卡片 ---------- */
+  .add-all-calendar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .cta-button {
+    display: inline-block;
+    background: var(--teal);
+    color: #fff;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-size: 0.92rem;
+  }
+  .cta-hint { font-size: 0.8rem; color: var(--ink-soft); }
+
+  .day-card {
+    display: flex;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 18px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(22,35,46,0.04);
+  }
+  .day-card .stub {
+    flex: 0 0 64px;
+    background: var(--navy);
+    color: #fdfcf8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 10px 4px;
+    cursor: pointer;
+  }
+  .day-card .stub::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; right: -1px;
+    width: 0;
+    border-right: 2px dashed rgba(244,245,240,0.35);
+  }
+  .day-card .stub .stub-num {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    writing-mode: vertical-rl;
+    letter-spacing: 0.05em;
+  }
+  .day-card .body { flex: 1; padding: 14px 16px 16px; min-width: 0; }
+  .day-card h3 {
+    margin: 0 0 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.08rem;
+  }
+  .day-card h3 .day-date { font-weight: 400; color: var(--ink-soft); font-size: 0.92rem; }
+  .day-card h3::after { content: "收起 ▾"; color: var(--ink-soft); font-size: 0.84rem; font-weight: 400; }
+  .day-card.collapsed h3::after { content: "展开 ▸"; }
+  .day-card.collapsed .timeline,
+  .day-card.collapsed .day-total { display: none; }
+
+
+  /* 地点照片缩略图（时间轴条目旁） */
+
+  ol.timeline { list-style: none; margin: 0; padding: 0; }
+  ol.timeline li {
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 1rem;
+  }
+  ol.timeline li:last-child { border-bottom: none; }
+  ol.timeline .time { font-family: var(--mono); font-weight: 700; color: var(--navy); margin-right: 8px; }
+  ol.timeline .desc { color: var(--ink); }
+  ol.timeline .rating {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.86rem;
+    color: var(--amber);
+    font-weight: 600;
+  }
+
+  ol.timeline li.nav-leg { padding: 6px 0; }
+  ol.timeline li.nav-leg a {
+    color: var(--amber);
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 600;
+    background: var(--amber-soft);
+    padding: 5px 11px;
+    border-radius: 8px;
+    display: inline-block;
+  }
+  /* 地点媒体：照片缩略图 */
+  .item-media {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .item-media .thumb {
+    width: 84px;
+    height: 84px;
+    border-radius: 9px;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    background: var(--paper);
+  }
+  ol.timeline li.conflict-warning { background: var(--rust-soft); border-radius: 8px; padding-left: 8px; }
+  ol.timeline li.conflict-warning .desc { color: var(--rust); }
+  .item-actions { display: block; margin-top: 6px; }
+  .mini-action {
+    display: inline-block;
+    font-size: 0.86rem;
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 7px;
+    margin: 3px 6px 0 0;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    background: var(--paper);
+  }
+  .mini-action.booking, .mini-action.booking-text { color: var(--teal); border-color: var(--teal-soft); background: var(--teal-soft); }
+
+  .day-total { color: var(--ink-soft); font-size: 0.92rem; margin: 10px 0 0; font-family: var(--mono); }
+
+  /* ---------- 极速地点方位图（SVG，无地图瓦片） ---------- */
+  .svg-map-wrap {
+    position: relative;
+    margin-bottom: 20px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: 0 1px 4px rgba(22,35,46,.06);
+    background: var(--card);
+  }
+  .svg-map-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 0.84rem;
+  }
+  .svg-map-toolbar strong { color: var(--ink); }
+  #trip-map.svg-trip-map {
+    display: block;
+    height: auto;
+    width: 100%;
+    max-height: 520px;
+    background: #f8fafc;
+  }
+  .svg-map-caption {
+    font-size: 17px;
+    font-family: var(--mono);
+    fill: #667085;
+    font-weight: 700;
+  }
+  .svg-map-label {
+    font-size: 13px;
+    fill: #25313d;
+    paint-order: stroke;
+    stroke: rgba(255,255,255,.92);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+    pointer-events: none;
+  }
+  .svg-marker circle {
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.22));
+  }
+  .svg-marker.map-active circle {
+    stroke: #111827;
+    stroke-width: 5;
+  }
+  .svg-active-route {
+    stroke: var(--teal);
+    stroke-width: 5;
+    stroke-linecap: round;
+    opacity: .92;
+  }
+  .map-legend {
+    position: absolute;
+    bottom: 36px;
+    left: 10px;
+    background: rgba(253,252,248,.92);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    z-index: 5;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    max-width: 60%;
+  }
+  .map-legend-item { display: flex; align-items: center; gap: 5px; }
+  .map-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid rgba(255,255,255,.8); }
+  .map-show-all-btn {
+    position: absolute;
+    top: 54px;
+    right: 10px;
+    z-index: 5;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 0.86rem;
+    cursor: pointer;
+    color: var(--ink);
+    box-shadow: 0 1px 3px rgba(22,35,46,.1);
+  }
+  .map-show-all-btn:hover { background: var(--paper); }
+  .map-no-coords {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 14px;
+    padding: 24px 20px;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  /* 导航段点击提示 */
+  .nav-leg.map-active { background: rgba(31,111,100,.08); border-radius: 7px; }
+  .map-seg-hint {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.78rem;
+    color: var(--teal);
+    opacity: .75;
+  }
+  .nav-leg-nolink { color: var(--ink-soft); font-size: 0.92rem; }
+
+  /* ---------- 预算表格（按天→类别层级） ---------- */
+  .budget-meta { color: var(--ink-soft); font-size: 0.92rem; margin: 4px 0; }
+  .grand-total, .per-head { font-family: var(--mono); font-size: 1.1rem; margin: 4px 0; }
+  .grand-total-final, .per-head-final { font-family: var(--mono); font-size: 1.1rem; margin: 4px 0; }
+  .display-conversion { font-family: var(--mono); font-size: 0.9rem; color: var(--ink-soft); margin: 2px 0; }
+  .grand-total strong, .per-head strong,
+  .grand-total-final strong, .per-head-final strong { color: var(--amber); }
+
+  .budget-day-block { margin-bottom: 20px; }
+  .budget-day-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 0 0 8px;
+    padding: 6px 12px;
+    background: var(--paper);
+    border-left: 4px solid var(--amber);
+    border-radius: 0 8px 8px 0;
+  }
+  .budget-grand-summary {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-top: 4px;
+  }
+  table.budget-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    background: var(--card);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  table.budget-table th, table.budget-table td {
+    border-bottom: 1px solid var(--line);
+    padding: 8px 11px;
+    text-align: left;
+    vertical-align: middle;
+  }
+  table.budget-table th {
+    background: var(--navy);
+    color: #fdfcf8;
+    font-weight: 600;
+    font-size: 0.86rem;
+  }
+  table.budget-table td { font-size: 0.93rem; }
+  td.budget-cat-cell {
+    font-weight: 600;
+    color: var(--navy);
+    font-size: 0.88rem;
+    background: var(--paper);
+    white-space: nowrap;
+    border-right: 1px solid var(--line);
+  }
+  td.budget-amt { font-family: var(--mono); text-align: right; white-space: nowrap; }
+  tr.day-subtotal-row td {
+    background: rgba(31,111,100,.06);
+    font-size: 0.9rem;
+    color: var(--teal);
+    border-top: 2px solid var(--line);
+  }
+
+  /* ---------- 地点图鉴 ---------- */
+  .places-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .place-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .place-photo-wrap {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    min-height: 150px;
+    max-height: 220px;
+    background: var(--paper);
+    overflow: hidden;
+  }
+  .place-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .place-photo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-soft);
+    font-size: 0.84rem;
+  }
+  .place-info { padding: 12px 14px 14px; }
+  .place-name { margin: 0 0 4px; font-family: var(--sans); font-size: 1.02rem; }
+  .place-meta { font-size: 0.8rem; color: var(--ink-soft); margin-bottom: 6px; }
+  .place-rating { color: var(--amber); font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; }
+  .place-review { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 8px; }
+  .place-services {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line);
+  }
+  .place-services-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--teal);
+    margin-bottom: 4px;
+  }
+  .place-services ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  .place-services li {
+    font-size: 0.84rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin-bottom: 3px;
+  }
+
+  /* ---------- 清单 / 印章卡片（签证、本地需求）---------- */
+  .checklist {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    position: relative;
+    font-size: 1rem;
+  }
+  .checklist::before {
+    content: attr(data-stamp);
+    position: absolute;
+    top: 16px; right: 18px;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    color: var(--teal);
+    border: 1.5px solid var(--teal);
+    border-radius: 999px;
+    padding: 3px 11px;
+    transform: rotate(6deg);
+    opacity: 0.75;
+  }
+  .checklist h4 { font-family: var(--sans); font-size: 1.05rem; margin-top: 18px; }
+
+  /* 普通项目符号列表：用一条短横替代默认圆点，呼应票根虚线的视觉语言 */
+  .checklist ul:not(.steps):not(.checklist-items) {
+    list-style: none;
+    padding-left: 4px;
+    margin: 12px 0;
+  }
+  .checklist ul:not(.steps):not(.checklist-items) li {
+    position: relative;
+    padding: 7px 0 7px 24px;
+    line-height: 1.6;
+  }
+  .checklist ul:not(.steps):not(.checklist-items) li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--amber);
+    font-weight: 700;
+  }
+
+  /* 步骤型清单：圆形编号徽标 + 竖向虚线，比"1. 2. 3."的纯文本编号更易读 */
+  .checklist ol.steps {
+    list-style: none;
+    counter-reset: step;
+    padding-left: 0;
+    margin: 16px 0;
+  }
+  .checklist ol.steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 10px 0 14px 46px;
+    border-bottom: 1px dashed var(--line);
+    line-height: 1.6;
+  }
+  .checklist ol.steps li:last-child { border-bottom: none; padding-bottom: 4px; }
+  .checklist ol.steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0; top: 8px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: #fdfcf8;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 0.92rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .checklist ol.steps li strong { color: var(--navy); }
+
+  /* 行前准备清单：真实可点击的复选框，打印时也能看到清晰的方框（手写打勾用） */
+  .checklist-items {
+    list-style: none;
+    padding: 0;
+    margin: 14px 0;
+  }
+  .checklist-items li {
+    border-bottom: 1px dashed var(--line);
+  }
+  .checklist-items li:last-child { border-bottom: none; }
+  .checklist-items label {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    padding: 11px 2px;
+    cursor: pointer;
+  }
+  .checklist-items input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 25px;
+    height: 25px;
+    flex: 0 0 25px;
+    margin-top: 1px;
+    border: 2px solid var(--teal);
+    border-radius: 6px;
+    position: relative;
+    cursor: pointer;
+    background: var(--card);
+  }
+  .checklist-items input[type="checkbox"]:checked {
+    background: var(--teal);
+  }
+  .checklist-items input[type="checkbox"]:checked::after {
+    content: "✓";
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -52%);
+    color: #fdfcf8;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .checklist-items label span { line-height: 1.5; padding-top: 2px; }
+  .checklist-items label:has(input:checked) span {
+    color: var(--ink-soft);
+    text-decoration: line-through;
+  }
+  .checklist-note { color: var(--ink-soft); font-size: 0.88rem; margin: 0 0 4px; }
+
+  .disclaimer {
+    color: var(--ink-soft);
+    font-size: 0.96rem;
+    border-top: 1px dashed var(--line);
+    margin-top: 24px;
+    padding-top: 16px;
+  }
+  .disclaimer p { margin: 8px 0; }
+
+  footer.foot {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 0.84rem;
+    padding: 24px 18px 40px;
+    font-family: var(--mono);
+  }
+
+  @media print {
+    nav.tabs, .action-bar { display: none; }
+    header.cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    section.tab-content { display: block !important; }
+    section.tab-content + section.tab-content { page-break-before: always; }
+    .day-card.collapsed .timeline,
+    .day-card.collapsed .day-total { display: block !important; }
+    .day-card h3::after { content: ""; }
+    .item-actions a.mini-action { background: none; border: none; padding: 0; text-decoration: underline; margin-right: 12px; }
+    .cta-button { display: none; }
+    .checklist-items input[type="checkbox"] { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    /* 只对真正应该保持完整的小单元避免分页内断裂，不对整页/整个标签页这种远超一页高度的
+       大容器设avoid——后者会导致浏览器打印引擎把内容硬挤进一页，造成文字和模块重叠粘连，
+       这是之前版本"行程规划部分文字模块粘在一起"问题的根因。 */
+    ol.timeline li { break-inside: avoid; page-break-inside: avoid; }
+    .place-card, .stat, .field, .budget-table tr { break-inside: avoid; page-break-inside: avoid; }
+    .day-card .stub { break-inside: avoid; page-break-inside: avoid; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .day-card { transition: box-shadow 0.15s ease; }
+  }
+
+  /* ---------- Google 无 API 懒加载地图 ---------- */
+  .google-lazy-map {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 5px rgba(22,35,46,.08);
+    margin-bottom: 20px;
+  }
+  .gmap-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .gmap-head strong { display: block; color: var(--ink); }
+  .gmap-head span { display: block; margin-top: 3px; color: var(--ink-soft); font-size: .88rem; }
+  .gmap-head a,
+  .gmap-route-actions a,
+  .gmap-route-actions button,
+  .gmap-placeholder-inner button {
+    border: 1px solid var(--teal-soft);
+    background: var(--teal-soft);
+    color: var(--teal);
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 7px 12px;
+    cursor: pointer;
+    font-size: .88rem;
+    font-weight: 700;
+    font-family: inherit;
+  }
+  .gmap-day-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(253,252,248,.74);
+  }
+  .gmap-day-btn {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 7px 10px;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    color: var(--ink);
+  }
+  .gmap-day-btn strong { color: var(--navy); }
+  .gmap-day-btn span { color: var(--ink-soft); font-size: .82rem; }
+  .gmap-day-btn.active { background: var(--teal-soft); border-color: rgba(31,111,100,.28); }
+  .gmap-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, .8fr);
+    gap: 0;
+  }
+  .gmap-placeholder {
+    min-height: 430px;
+    display: grid;
+    place-items: center;
+    padding: 22px;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(31,111,100,.12), transparent 26%),
+      radial-gradient(circle at 80% 40%, rgba(41,128,185,.12), transparent 25%),
+      linear-gradient(135deg, #f8fbff, var(--paper));
+  }
+  .gmap-placeholder-inner {
+    max-width: 520px;
+    text-align: center;
+    background: rgba(255,255,255,.88);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 6px 18px rgba(22,35,46,.07);
+  }
+  .gmap-placeholder-inner h3 { margin: 0 0 8px; }
+  .gmap-placeholder-inner p { color: var(--ink-soft); line-height: 1.7; margin-bottom: 14px; }
+  .gmap-frame-wrap iframe {
+    display: block;
+    width: 100%;
+    min-height: 520px;
+    border: 0;
+    background: #e5e7eb;
+  }
+  .gmap-frame-fallback {
+    padding: 9px 12px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: .86rem;
+    background: #fff;
+  }
+  .gmap-frame-fallback a { color: var(--teal); font-weight: 700; }
+  .gmap-side {
+    border-left: 1px solid var(--line);
+    padding: 12px;
+    background: #fff;
+    max-height: 590px;
+    overflow: auto;
+  }
+  .gmap-route-card { display: none; }
+  .gmap-route-card.active { display: block; }
+  .gmap-route-card h4 { margin: 0 0 8px; }
+  .gmap-route-summary { color: var(--ink-soft); line-height: 1.6; margin: 0 0 10px; }
+  .gmap-place-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .gmap-place-list li {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px;
+    background: var(--paper);
+  }
+  .gmap-pin {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--navy);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: .8rem;
+    flex: 0 0 auto;
+  }
+  .gmap-place-list strong { display: block; }
+  .gmap-place-list small,
+  .gmap-place-list em {
+    display: inline-block;
+    margin-right: 6px;
+    color: var(--ink-soft);
+    font-size: .78rem;
+    font-style: normal;
+  }
+  .gmap-route-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .gmap-embed-note {
+    margin-top: 10px;
+    color: var(--ink-soft);
+    font-size: .82rem;
+    line-height: 1.6;
+  }
+  @media (max-width: 820px) {
+    .gmap-layout { grid-template-columns: 1fr; }
+    .gmap-side { border-left: 0; border-top: 1px solid var(--line); max-height: none; }
+    .gmap-frame-wrap iframe { min-height: 440px; }
+  }
+
+
+  /* ---------- v13：回到第一版 Google 搜索地图样式 ---------- */
+  .google-lazy-map {
+    border-radius: 18px;
+    box-shadow: 0 8px 26px rgba(15,23,42,.08);
+  }
+  .gmap-placeholder {
+    min-height: 420px;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(37,99,235,.16), transparent 26%),
+      radial-gradient(circle at 80% 40%, rgba(31,111,100,.15), transparent 25%),
+      linear-gradient(135deg,#f8fbff,#f5f4ef);
+  }
+  .gmap-placeholder-inner h3 {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+  .gmap-placeholder-inner button,
+  .gmap-route-actions button {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+  }
+  .gmap-head a,
+  .gmap-route-actions a {
+    background: #eef8f6;
+    border-color: #b9ddd6;
+    color: var(--teal);
+  }
+  .gmap-day-btn.active {
+    background: #eef4ff;
+    border-color: #b7c9ff;
+  }
+  .gmap-frame-wrap iframe {
+    min-height: 520px;
+  }
+
+
+  /* ---------- v18：Leaflet + Esri/ArcGIS 全 marker 地图 ---------- */
+  .leaflet-esri-map {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 8px 26px rgba(15,23,42,.08);
+    margin-bottom: 20px;
+  }
+  .leaflet-map-head {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #fff;
+  }
+  .leaflet-map-head strong { display: block; font-size: 16px; color: var(--ink); }
+  .leaflet-map-head span { display: block; color: var(--ink-soft); font-size: .86rem; margin-top: 2px; }
+  .leaflet-map-head a {
+    color: var(--teal);
+    background: var(--teal-soft);
+    border: 1px solid rgba(31,111,100,.25);
+    border-radius: 999px;
+    padding: 8px 13px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .leaflet-day-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(253,252,248,.74);
+  }
+  .leaflet-day-tab {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .leaflet-day-tab strong { color: var(--navy); }
+  .leaflet-day-tab span {
+    max-width: 190px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--ink-soft);
+    font-size: .82rem;
+  }
+  .leaflet-day-tab.active {
+    background: #eef4ff;
+    border-color: #b7c9ff;
+  }
+  .leaflet-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.9fr) minmax(300px, .62fr);
+  }
+  .leaflet-map-area {
+    background: #fff;
+    padding: 14px;
+  }
+  .leaflet-title-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .leaflet-title-row strong { font-size: 1rem; }
+  .leaflet-title-row span { color: var(--ink-soft); font-size: .86rem; }
+  .trip-leaflet-map {
+    height: 820px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #e5e7eb;
+  }
+  .leaflet-pin-marker {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 10px rgba(15,23,42,.28);
+    font-size: 11px;
+  }
+  .leaflet-map-side {
+    border-left: 1px solid var(--line);
+    background: #fff;
+    padding: 14px;
+    max-height: 900px;
+    overflow: auto;
+  }
+  .leaflet-map-side h4 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+  }
+  .leaflet-place-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 9px;
+  }
+  .leaflet-place-list li {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 9px;
+    background: #fbfcfd;
+    cursor: pointer;
+  }
+  .leaflet-place-list li:hover {
+    border-color: #b7c9ff;
+    background: #f8fbff;
+  }
+  .leaflet-list-pin {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    flex: 0 0 auto;
+    font-size: 11px;
+  }
+  .leaflet-place-list strong { display: block; font-size: .9rem; }
+  .leaflet-place-list small { display: block; margin-top: 2px; color: var(--ink-soft); }
+  .leaflet-place-list em { font-style: normal; color: #2563eb; font-weight: 700; margin-right: 6px; }
+  .leaflet-map-warning {
+    margin-top: 8px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 9px 10px;
+    color: var(--ink-soft);
+    background: #fff;
+    font-size: .84rem;
+  }
+  @media (max-width: 900px) {
+    .leaflet-layout { grid-template-columns: 1fr; }
+    .leaflet-map-side { border-left: 0; border-top: 1px solid var(--line); max-height: none; }
+    .trip-leaflet-map { height: 620px; }
+  }
+
+
+  /* ---------- v19：图鉴 搜索 搜索兜底 ---------- */
+  .gallery-notice {
+    border: 1px dashed var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin: 0 0 14px;
+    background: #fff;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    font-size: .9rem;
+  }
+  .gallery-search-placeholder {
+    min-height: 210px;
+    padding: 16px;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 8px;
+    text-align: center;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(37,99,235,.14), transparent 26%),
+      radial-gradient(circle at 80% 70%, rgba(31,111,100,.12), transparent 28%),
+      #f8fafc;
+    color: var(--ink-soft);
+  }
+  .gallery-placeholder-icon {
+    font-size: 2rem;
+  }
+  .gallery-search-placeholder strong {
+    color: var(--ink);
+  }
+  .gallery-search-placeholder span {
+    font-size: .84rem;
+    line-height: 1.55;
+  }
+  .gallery-search-placeholder code,
+  .place-review-missing code {
+    font-family: var(--mono);
+    background: rgba(22,35,46,.06);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 1px 5px;
+  }
+  .gallery-search-actions,
+  .gallery-mini-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .gallery-search-actions a,
+  .gallery-mini-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(31,111,100,.25);
+    background: var(--teal-soft);
+    color: var(--teal);
+    padding: 7px 10px;
+    font-size: .82rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .place-rating-missing {
+    display: grid;
+    gap: 6px;
+    color: var(--ink-soft);
+  }
+  .place-review-missing {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px;
+    background: #fbfcfd;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+  .place-review-missing strong {
+    display: block;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .place-review-missing p {
+    margin: 0;
+    font-size: .86rem;
+    line-height: 1.6;
+  }
+  .place-photo-caption {
+    font-size: .76rem;
+    color: var(--ink-soft);
+    padding: 6px 8px;
+    border-top: 1px solid var(--line);
+    background: #fff;
+  }
+
+
+  /* ---------- v19：图片缩略图兜底 ---------- */
+  .place-photo-fallback {
+    position: relative;
+    min-height: 210px;
+    background: #f8fafc;
+  }
+  .place-photo-fallback .place-photo {
+    display: block;
+  }
+  .place-photo-fallback .gallery-search-placeholder {
+    display: none;
+  }
+  .place-photo-fallback.image-failed .place-photo {
+    display: none;
+  }
+  .place-photo-fallback.image-failed .gallery-search-placeholder {
+    display: grid;
+  }
+  .gallery-search-overlay {
+    position: absolute;
+    left: 10px;
+    bottom: 34px;
+    z-index: 2;
+  }
+  .gallery-search-overlay a {
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(6px);
+  }
+
+
+  /* ---------- v20：地图放大 + 图鉴按钮精简 ---------- */
+  .leaflet-layout {
+    grid-template-columns: minmax(0, 1.9fr) minmax(300px, .62fr);
+  }
+  .trip-leaflet-map {
+    height: 820px;
+  }
+  .leaflet-map-side {
+    max-height: 900px;
+  }
+  .gallery-search-overlay {
+    display: none !important;
+  }
+  .place-rating-missing .gallery-mini-actions a,
+  .place-review-missing .gallery-mini-actions a {
+    background: #fff7ed;
+    color: #9a3412;
+    border-color: #fed7aa;
+  }
+  @media (max-width: 900px) {
+    .trip-leaflet-map {
+      height: 620px;
+    }
+  }
+
+
+  /* ---------- v21：在线地图加大、贴合、去按钮 ---------- */
+  .leaflet-esri-map {
+    border-radius: 16px;
+  }
+  .leaflet-layout {
+    grid-template-columns: minmax(0, 2.35fr) minmax(250px, .48fr) !important;
+  }
+  .leaflet-map-area {
+    padding: 6px !important;
+  }
+  .leaflet-title-row {
+    margin: 4px 6px 6px !important;
+  }
+  .trip-leaflet-map {
+    height: min(980px, 84vh) !important;
+    min-height: 840px;
+    border-radius: 10px !important;
+  }
+  .leaflet-map-side {
+    max-height: min(980px, 84vh) !important;
+    padding: 10px !important;
+  }
+  .leaflet-place-list {
+    gap: 7px !important;
+  }
+  .leaflet-place-list li {
+    padding: 7px !important;
+  }
+  .gallery-mini-actions {
+    display: none !important;
+  }
+  .place-rating-missing small {
+    display: block;
+    margin-top: 4px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+    font-size: .82rem;
+  }
+  @media (max-width: 900px) {
+    .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+    .trip-leaflet-map {
+      height: 72vh !important;
+      min-height: 640px;
+    }
+    .leaflet-map-side {
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v22：修复隐藏标签页地图瓦片 + 真正放大地图 ---------- */
+  main {
+    max-width: 1480px !important;
+  }
+  #itinerary.tab-content {
+    max-width: 1480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #itinerary .leaflet-esri-map {
+    width: calc(100vw - 36px);
+    max-width: 1480px;
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+  #itinerary .leaflet-layout {
+    grid-template-columns: minmax(0, 2.75fr) minmax(240px, .42fr) !important;
+  }
+  #itinerary .leaflet-map-area {
+    padding: 4px !important;
+  }
+  #itinerary .trip-leaflet-map {
+    width: 100% !important;
+    height: min(1040px, 86vh) !important;
+    min-height: 860px !important;
+  }
+  #itinerary .leaflet-map-side {
+    max-height: min(1040px, 86vh) !important;
+    padding: 8px !important;
+  }
+  @media (max-width: 900px) {
+    #itinerary .leaflet-esri-map {
+      width: calc(100vw - 18px);
+    }
+    #itinerary .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+    #itinerary .trip-leaflet-map {
+      height: 74vh !important;
+      min-height: 640px !important;
+    }
+    #itinerary .leaflet-map-side {
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v23：地图布局硬修复，去掉左右空白 ---------- */
+  section#itinerary.tab-content {
+    width: 100% !important;
+  }
+  #itinerary .leaflet-esri-map {
+    width: calc(100vw - 8px) !important;
+    max-width: none !important;
+    margin-left: 50% !important;
+    transform: translateX(-50%) !important;
+    border-radius: 12px !important;
+  }
+  #itinerary .leaflet-layout {
+    grid-template-columns: minmax(0, 3.2fr) minmax(220px, .38fr) !important;
+    width: 100% !important;
+  }
+  #itinerary .leaflet-map-area {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 2px !important;
+    display: block !important;
+  }
+  #itinerary .leaflet-title-row {
+    margin: 6px 8px 8px !important;
+  }
+  #itinerary .trip-leaflet-map {
+    width: 100% !important;
+    max-width: none !important;
+    height: min(1080px, 88vh) !important;
+    min-height: 880px !important;
+    border-radius: 8px !important;
+  }
+  #itinerary .leaflet-map-side {
+    max-height: min(1080px, 88vh) !important;
+    padding: 8px !important;
+  }
+  @media (max-width: 900px) {
+    #itinerary .leaflet-esri-map {
+      width: calc(100vw - 4px) !important;
+    }
+    #itinerary .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+    #itinerary .trip-leaflet-map {
+      height: 76vh !important;
+      min-height: 660px !important;
+    }
+    #itinerary .leaflet-map-side {
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v24：地图左右留白舒适化 ---------- */
+  #itinerary .leaflet-esri-map {
+    width: calc(100vw - 72px) !important;
+    max-width: 1360px !important;
+    margin-left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+  #itinerary .leaflet-layout {
+    grid-template-columns: minmax(0, 2.85fr) minmax(260px, .48fr) !important;
+  }
+  #itinerary .leaflet-map-area {
+    padding: 8px !important;
+  }
+  #itinerary .trip-leaflet-map {
+    height: min(1000px, 84vh) !important;
+    min-height: 820px !important;
+  }
+  #itinerary .leaflet-map-side {
+    max-height: min(1000px, 84vh) !important;
+  }
+  @media (max-width: 900px) {
+    #itinerary .leaflet-esri-map {
+      width: calc(100vw - 24px) !important;
+      max-width: none !important;
+    }
+    #itinerary .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+    #itinerary .trip-leaflet-map {
+      height: 72vh !important;
+      min-height: 620px !important;
+    }
+  }
+
+
+  /* ---------- v25：大边距地图版 ---------- */
+  #itinerary .leaflet-esri-map {
+    width: min(1180px, calc(100vw - 160px)) !important;
+    max-width: 1180px !important;
+    margin-left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+  #itinerary .leaflet-layout {
+    grid-template-columns: minmax(0, 2.45fr) minmax(280px, .62fr) !important;
+  }
+  #itinerary .leaflet-map-area {
+    padding: 10px !important;
+  }
+  #itinerary .trip-leaflet-map {
+    height: min(920px, 80vh) !important;
+    min-height: 760px !important;
+  }
+  #itinerary .leaflet-map-side {
+    max-height: min(920px, 80vh) !important;
+  }
+  @media (max-width: 1100px) {
+    #itinerary .leaflet-esri-map {
+      width: calc(100vw - 80px) !important;
+      max-width: none !important;
+    }
+  }
+  @media (max-width: 900px) {
+    #itinerary .leaflet-esri-map {
+      width: calc(100vw - 32px) !important;
+      max-width: none !important;
+    }
+    #itinerary .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+    #itinerary .trip-leaflet-map {
+      height: 70vh !important;
+      min-height: 600px !important;
+    }
+    #itinerary .leaflet-map-side {
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v26：全站统一大边距系统 ---------- */
+  :root {
+    --page-max: 1180px;
+    --page-gutter: clamp(56px, 8vw, 150px);
+    --page-width: min(var(--page-max), calc(100vw - var(--page-gutter) - var(--page-gutter)));
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  header.cover,
+  .action-bar,
+  nav.tabs,
+  main,
+  footer.foot {
+    width: var(--page-width) !important;
+    max-width: var(--page-max) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  header.cover {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .action-bar,
+  nav.tabs {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  main {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: var(--page-max) !important;
+  }
+
+  section.tab-content {
+    width: 100% !important;
+  }
+
+  #itinerary.tab-content {
+    max-width: none !important;
+  }
+
+  #itinerary .leaflet-esri-map {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    transform: none !important;
+  }
+
+  #itinerary .leaflet-layout {
+    grid-template-columns: minmax(0, 2.55fr) minmax(280px, .58fr) !important;
+    width: 100% !important;
+  }
+
+  #itinerary .leaflet-map-area {
+    padding: 10px !important;
+  }
+
+  #itinerary .trip-leaflet-map {
+    width: 100% !important;
+    height: min(920px, 80vh) !important;
+    min-height: 760px !important;
+  }
+
+  #itinerary .leaflet-map-side {
+    max-height: min(920px, 80vh) !important;
+  }
+
+  .places-gallery,
+  .overview-grid,
+  .weather-card,
+  .checklist,
+  .budget-table,
+  .disclaimer,
+  .gallery-notice,
+  .day-card,
+  .add-all-calendar {
+    max-width: 100% !important;
+  }
+
+  @media (max-width: 900px) {
+    :root {
+      --page-gutter: clamp(18px, 4.5vw, 32px);
+    }
+
+    #itinerary .leaflet-layout {
+      grid-template-columns: 1fr !important;
+    }
+
+    #itinerary .trip-leaflet-map {
+      height: 70vh !important;
+      min-height: 600px !important;
+    }
+
+    #itinerary .leaflet-map-side {
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v27：顶部封面横幅满宽 ---------- */
+  header.cover {
+    width: 100vw !important;
+    max-width: none !important;
+    margin-left: 50% !important;
+    margin-right: 0 !important;
+    transform: translateX(-50%) !important;
+    padding-left: max(var(--page-gutter), calc((100vw - var(--page-max)) / 2)) !important;
+    padding-right: max(var(--page-gutter), calc((100vw - var(--page-max)) / 2)) !important;
+  }
+
+  header.cover .field-row,
+  header.cover h1,
+  header.cover .kicker {
+    max-width: var(--page-max);
+  }
+
+  @media (max-width: 900px) {
+    header.cover {
+      padding-left: var(--page-gutter) !important;
+      padding-right: var(--page-gutter) !important;
+    }
+  }
+
+
+  /* ---------- v28：打印 PDF 横幅满宽 + 图鉴去图片说明 ---------- */
+  .action-bar {
+    width: 100vw !important;
+    max-width: none !important;
+    margin-left: 50% !important;
+    margin-right: 0 !important;
+    transform: translateX(-50%) !important;
+    padding: 14px max(var(--page-gutter), calc((100vw - var(--page-max)) / 2)) !important;
+    background: var(--navy) !important;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+  }
+
+  .action-bar .action-btn.primary {
+    background: var(--amber) !important;
+    color: #fff !important;
+    border: 1px solid rgba(255,255,255,.35) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,.18);
+    min-height: 42px;
+    padding: 10px 16px;
+  }
+
+  .place-photo-fallback .place-photo-caption {
+    display: none !important;
+  }
+
+  @media (max-width: 900px) {
+    .action-bar {
+      padding-left: var(--page-gutter) !important;
+      padding-right: var(--page-gutter) !important;
+      justify-content: center !important;
+    }
+    .action-bar .action-btn.primary {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+
+  /* ---------- v29：统一高级横幅色 + 地图右侧列表等高 ---------- */
+  :root {
+    --hero-bg: linear-gradient(135deg, #14293d 0%, #1d4057 46%, #285f68 100%);
+    --hero-border: rgba(255,255,255,.16);
+    --hero-shadow: 0 18px 42px rgba(13, 32, 48, .18);
+    --premium-accent: #c9a96a;
+    --premium-accent-dark: #9b7a34;
+  }
+
+  header.cover,
+  .action-bar {
+    background: var(--hero-bg) !important;
+    color: #f7fbff !important;
+    box-shadow: var(--hero-shadow);
+  }
+
+  header.cover {
+    border-bottom: 1px solid var(--hero-border) !important;
+  }
+
+  header.cover .kicker,
+  header.cover h1,
+  header.cover .field-row,
+  header.cover .field-row span {
+    color: #f7fbff !important;
+  }
+
+  header.cover .kicker {
+    letter-spacing: .16em;
+    opacity: .82;
+  }
+
+  header.cover .field-row span {
+    background: rgba(255,255,255,.10) !important;
+    border: 1px solid rgba(255,255,255,.18) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .action-bar {
+    border-top: 1px solid rgba(255,255,255,.08) !important;
+    border-bottom: 1px solid rgba(255,255,255,.14) !important;
+    box-shadow: 0 12px 28px rgba(13, 32, 48, .13);
+  }
+
+  .action-bar .action-btn.primary {
+    background: linear-gradient(135deg, var(--premium-accent) 0%, var(--premium-accent-dark) 100%) !important;
+    border: 1px solid rgba(255,255,255,.38) !important;
+    color: #fffaf0 !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,.20);
+  }
+
+  .action-bar .action-btn.primary:hover {
+    filter: brightness(1.04);
+    transform: translateY(-1px);
+  }
+
+  #itinerary .leaflet-layout {
+    align-items: stretch !important;
+  }
+
+  #itinerary .trip-leaflet-map,
+  #itinerary .leaflet-map-side {
+    height: min(920px, 80vh) !important;
+    min-height: 760px !important;
+    max-height: min(920px, 80vh) !important;
+    box-sizing: border-box !important;
+  }
+
+  #itinerary .leaflet-map-side {
+    align-self: stretch !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    background: #fff !important;
+  }
+
+  #itinerary .leaflet-place-list {
+    flex: 1 1 auto !important;
+    align-content: flex-start !important;
+  }
+
+  @media (max-width: 900px) {
+    #itinerary .trip-leaflet-map {
+      height: 70vh !important;
+      min-height: 600px !important;
+      max-height: none !important;
+    }
+
+    #itinerary .leaflet-map-side {
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+    }
+  }
+
+
+  /* ---------- v30：商务深蓝横幅 + 地图右侧列表完全贴底 ---------- */
+  :root {
+    --hero-bg: linear-gradient(135deg, #071523 0%, #0b2236 48%, #12384d 100%) !important;
+    --hero-border: rgba(255,255,255,.10) !important;
+    --hero-shadow: 0 18px 44px rgba(3, 12, 24, .24) !important;
+    --premium-accent: #b99a58 !important;
+    --premium-accent-dark: #80642a !important;
+  }
+
+  header.cover,
+  .action-bar {
+    background: var(--hero-bg) !important;
+    box-shadow: var(--hero-shadow) !important;
+  }
+
+  header.cover .field-row span {
+    background: rgba(255,255,255,.075) !important;
+    border-color: rgba(255,255,255,.14) !important;
+  }
+
+  .action-bar .action-btn.primary {
+    background: linear-gradient(135deg, #b99a58 0%, #80642a 100%) !important;
+    color: #fff8e8 !important;
+    border-color: rgba(255,255,255,.30) !important;
+  }
+
+  #itinerary .leaflet-layout {
+    align-items: stretch !important;
+    grid-auto-rows: 1fr !important;
+  }
+
+  #itinerary .leaflet-map-area,
+  #itinerary .leaflet-map-side {
+    height: min(920px, 80vh) !important;
+    min-height: 760px !important;
+    max-height: min(920px, 80vh) !important;
+    box-sizing: border-box !important;
+  }
+
+  #itinerary .leaflet-map-area {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  #itinerary .trip-leaflet-map {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  #itinerary .leaflet-map-side {
+    align-self: stretch !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    padding: 8px !important;
+    background: #fff !important;
+  }
+
+  #itinerary .leaflet-place-list {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    padding-bottom: 8px !important;
+    align-content: stretch !important;
+  }
+
+  #itinerary .leaflet-place-list li:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  @media (max-width: 900px) {
+    #itinerary .leaflet-map-area,
+    #itinerary .leaflet-map-side {
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+    }
+
+    #itinerary .trip-leaflet-map {
+      height: 70vh !important;
+      min-height: 600px !important;
+    }
+
+    #itinerary .leaflet-place-list {
+      height: auto !important;
+      overflow-y: visible !important;
+    }
+  }
+
+
+  /* ---------- v31：去除页面左右灰色渐变/阴影 ---------- */
+  :root {
+    --hero-shadow: none !important;
+  }
+
+  html,
+  body {
+    background: var(--paper) !important;
+    background-image: none !important;
+  }
+
+  body::before,
+  body::after,
+  header.cover::before,
+  header.cover::after,
+  .action-bar::before,
+  .action-bar::after,
+  nav.tabs::before,
+  nav.tabs::after {
+    content: none !important;
+    display: none !important;
+    background: none !important;
+    box-shadow: none !important;
+  }
+
+  header.cover,
+  .action-bar,
+  nav.tabs {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  header.cover {
+    background-image: var(--hero-bg) !important;
+  }
+
+  .action-bar {
+    background-image: var(--hero-bg) !important;
+  }
+
+  nav.tabs {
+    background: var(--paper) !important;
+  }
+
+  main,
+  footer.foot {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+
+  /* ---------- v32：顶部目录导航居中排列 ---------- */
+  nav.tabs {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 0 !important;
+  }
+
+  nav.tabs .tab-scroll,
+  nav.tabs .tabs-inner,
+  nav.tabs .tabs-wrap {
+    width: 100%;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  nav.tabs button {
+    flex: 0 0 auto !important;
+  }
+
+  @media (max-width: 900px) {
+    nav.tabs {
+      justify-content: flex-start !important;
+    }
+
+    nav.tabs .tab-scroll,
+    nav.tabs .tabs-inner,
+    nav.tabs .tabs-wrap {
+      justify-content: flex-start !important;
+    }
+  }
+
+
+  /* ---------- v33：目录按钮组结构化居中 ---------- */
+  nav.tabs {
+    width: 100vw !important;
+    max-width: none !important;
+    margin-left: 50% !important;
+    margin-right: 0 !important;
+    transform: translateX(-50%) !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    display: block !important;
+    overflow-x: visible !important;
+    background: var(--paper) !important;
+  }
+
+  nav.tabs .tabs-inner {
+    width: var(--page-width) !important;
+    max-width: var(--page-max) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-end !important;
+    flex-wrap: wrap !important;
+    gap: 0 !important;
+    overflow-x: visible !important;
+    border-bottom: 1px solid var(--line);
+    padding-top: 10px;
+  }
+
+  nav.tabs button {
+    flex: 0 0 auto !important;
+  }
+
+  @media (max-width: 900px) {
+    nav.tabs {
+      overflow-x: auto !important;
+    }
+
+    nav.tabs .tabs-inner {
+      width: max-content !important;
+      min-width: calc(100vw - 2 * var(--page-gutter)) !important;
+      justify-content: flex-start !important;
+      flex-wrap: nowrap !important;
+      padding-left: var(--page-gutter) !important;
+      padding-right: var(--page-gutter) !important;
+    }
+  }
+
+</style>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<header class="cover">
+  <div class="kicker">TRAVEL ITINERARY</div>
+  <h1><!-- PLACEHOLDER:TITLE -->出发地 → 目的地 N日行程方案</h1>
+  <div class="field-row">
+    <!-- PLACEHOLDER:FIELDROW -->
+  </div>
+</header>
+
+<div class="action-bar">
+  <button class="action-btn primary" onclick="window.print()">🖨️ 打印 / 导出 PDF</button>
+</div>
+
+<nav class="tabs">
+  <div class="tabs-inner">
+  <button class="tab-btn active" data-target="overview">概览</button>
+  <button class="tab-btn" data-target="checklist">行前准备</button>
+  <button class="tab-btn" data-target="itinerary">逐日行程</button>
+  <button class="tab-btn" data-target="gallery">地点图鉴</button>
+  <button class="tab-btn" data-target="budget">预算</button>
+  <button class="tab-btn" data-target="visa">签证与证件</button>
+  <button class="tab-btn" data-target="customs">当地须知</button>
+  <button class="tab-btn" data-target="local-needs">本地特殊需求</button>
+  <button class="tab-btn" data-target="notes">注意事项</button>
+  </div>
+</nav>
+
+<main>
+
+  <section id="overview" class="tab-content active">
+    <h2>行程概览</h2>
+    <!-- PLACEHOLDER:OVERVIEW -->
+    <div class="weather-card">
+      <!-- PLACEHOLDER:WEATHER -->
+    </div>
+  </section>
+
+  <section id="checklist" class="tab-content">
+    <h2>行前准备清单</h2>
+    <p class="lede">点一下方框就能打勾，提醒自己哪些事已经办好了；打印出来也能直接用笔手动打勾。</p>
+    <div class="checklist" data-stamp="TO-DO · 出发前">
+      <ul class="checklist-items">
+        <!-- PLACEHOLDER:PRETRIP_CHECKLIST -->
+      </ul>
+    </div>
+  </section>
+
+  <section id="itinerary" class="tab-content">
+    <h2>逐日时间轴</h2>
+    <p class="lede">点击每天的标题可以收起/展开；"🧭"是导航按钮，点开直接跳地图 App，下方附带该段路线图（如已配置在线地图）；"📅 加入日历"一键写入手机日历；"🎫"是预订平台入口。</p>
+    <!-- PLACEHOLDER:ITINERARY -->
+  </section>
+
+  <section id="gallery" class="tab-content">
+    <h2>地点图鉴</h2>
+    <p class="lede">行程里涉及的每一个地点，汇总展示真实照片、评分、点评摘要和配套/增值服务。</p>
+    <!-- PLACEHOLDER:GALLERY -->
+  </section>
+
+  <section id="budget" class="tab-content">
+    <h2>预算明细</h2>
+    <!-- PLACEHOLDER:BUDGET -->
+  </section>
+
+  <section id="visa" class="tab-content">
+    <h2>签证与证件</h2>
+    <div class="checklist" data-stamp="ENTRY · 入境核查">
+      <!-- PLACEHOLDER:VISA -->
+    </div>
+  </section>
+
+  <section id="customs" class="tab-content">
+    <h2>当地须知</h2>
+    <p class="lede">入境禁带/限带物品，以及当地的行为举止与文化禁忌提醒。</p>
+    <div class="checklist" data-stamp="CUSTOMS · 入乡随俗">
+      <!-- PLACEHOLDER:CUSTOMS -->
+    </div>
+  </section>
+
+  <section id="local-needs" class="tab-content">
+    <h2>本地特殊需求</h2>
+    <div class="checklist" data-stamp="LOCAL · 在地准备">
+      <!-- PLACEHOLDER:LOCAL_NEEDS -->
+    </div>
+  </section>
+
+  <section id="notes" class="tab-content">
+    <h2>注意事项</h2>
+    <div class="disclaimer">
+      <!-- PLACEHOLDER:NOTES -->
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">PLANNED WITH TRAVEL-PLANNER · 价格与政策请以预订时为准</footer>
+
+<script>
+  document.querySelectorAll(".tab-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.remove("active"); });
+      document.querySelectorAll(".tab-content").forEach(function (s) { s.classList.remove("active"); });
+      btn.classList.add("active");
+      document.getElementById(btn.dataset.target).classList.add("active");
+      if (btn.dataset.target === "itinerary" && window.tripLeafletRefreshMap) {
+        setTimeout(window.tripLeafletRefreshMap, 50);
+        setTimeout(window.tripLeafletRefreshMap, 160);
+        setTimeout(window.tripLeafletRefreshMap, 360);
+        setTimeout(window.tripLeafletRefreshMap, 760);
+        setTimeout(window.tripLeafletRefreshMap, 1300);
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+
+  document.querySelectorAll(".day-card h3, .day-card .stub").forEach(function (h) {
+    h.addEventListener("click", function () {
+      h.closest(".day-card").classList.toggle("collapsed");
+    });
+  });
+</script>
+
+</body>
+</html>

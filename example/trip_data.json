@@ -1,0 +1,814 @@
+{
+  "trip": {
+    "language": "zh",
+    "origin": "香港",
+    "destination": "冰岛",
+    "destination_region": "中国内地以外",
+    "start_date": "2026-08-01",
+    "days": 7,
+    "travelers": 2,
+    "budget_tier": "经济优先",
+    "custom_budget_total": null,
+    "currency": "CNY",
+    "booking_platform_preference": "携程",
+    "destination_en": "Iceland",
+    "destination_local": "Ísland",
+    "local_language_code": "is",
+    "pace": "紧凑",
+    "nationality": "中国大陆",
+    "local_transport_mode": "自驾租车",
+    "license_country": null,
+    "license_type": null,
+    "nav_map_provider": "google",
+    "style_preference": "热门打卡",
+    "scenery_preference": "自然风光"
+  },
+  "items": [
+    {
+      "day": 0,
+      "category": "签证/证件",
+      "description": "冰岛申根签证费",
+      "amount": 750,
+      "per_person": true,
+      "notes": "约¥750/人，原价90欧元，汇率约1:8.3，仅供参考"
+    },
+    {
+      "day": 0,
+      "category": "签证/证件",
+      "description": "VFS签证中心服务费",
+      "amount": 245,
+      "per_person": true,
+      "notes": "VFS Global服务费，约¥245/人"
+    },
+    {
+      "day": 0,
+      "category": "签证/证件",
+      "description": "申根旅行医疗保险（7天）",
+      "amount": 200,
+      "per_person": true,
+      "notes": "约¥100-300/人，保额需≥3万欧元，建议比行程多买1-2天"
+    },
+    {
+      "day": 1,
+      "category": "长途交通",
+      "description": "香港HKG → 赫尔辛基HEL → 凯夫拉维克KEF（芬兰航空，往返）",
+      "time_start": "08:00",
+      "time_end": "22:00",
+      "amount": 7500,
+      "per_person": true,
+      "location": "凯夫拉维克国际机场",
+      "location_en": "Keflavik Airport",
+      "location_local": "Keflavikurflugvollur",
+      "booking_platform": "携程",
+      "transport_mode_from_prev": "driving",
+      "notes": "芬兰航空，经赫尔辛基转机，飞行+转机约26h45m。往返总价约¥7500/人。8月1日出发，8月2日抵达冰岛（时差-8h）。实际预订时价格以携程显示为准。",
+      "search_aliases": [
+        "Keflavik International Airport",
+        "KEF Airport",
+        "Reykjavik Keflavik Airport"
+      ],
+      "lat": 63.995043,
+      "lng": -22.623864,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Keflavik Airport, 1A, Kjóavöllur, Suðurnesjabær, Southern Peninsula, 235, Iceland"
+    },
+    {
+      "day": 2,
+      "category": "租车/装备",
+      "description": "自动挡经济型租车（6天）+ 全额保险（GP+S&A+CDW）+ 道路税",
+      "amount": 7400,
+      "per_person": false,
+      "notes": "约¥7400整车/6天，含基础租金(自动挡约€800)+全险(€200)+道路税(€70)，汇率1:8。8月旺季需提前预订。"
+    },
+    {
+      "day": 2,
+      "category": "租车/装备",
+      "description": "环岛汽油费（全程约1500km）",
+      "amount": 1800,
+      "per_person": false,
+      "notes": "约¥1800/整车，油价约11-12元/升，经济型油耗约7L/100km。预估仅供参考。"
+    },
+    {
+      "day": 0,
+      "category": "签证/证件",
+      "description": "驾照英文翻译公证 + 海牙认证",
+      "amount": 400,
+      "per_person": true,
+      "notes": "约¥200-300公证+海牙认证，建议提前3-4周办理。"
+    },
+    {
+      "day": 2,
+      "category": "住宿",
+      "description": "Selfoss Hostel（塞尔福斯青旅）双人间",
+      "amount": 450,
+      "per_person": false,
+      "location": "Selfoss Hostel, Austurvegur 28, Selfoss",
+      "location_en": "Selfoss Hostel Austurvegur 28",
+      "location_local": "Selfoss Hostel",
+      "rating": 7.8,
+      "rating_source": "Booking",
+      "rating_count": null,
+      "review_summary": "镇中心位置，免费停车，共享厨房设施齐全，步行可到小猪超市",
+      "services": [
+        "免费停车",
+        "共享厨房",
+        "免费WiFi"
+      ],
+      "notes": "共用卫浴。双人间总价约¥450/晚。",
+      "search_aliases": [
+        "Selfoss HI Hostel"
+      ],
+      "lat": 63.936932,
+      "lng": -20.993788,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Iceland Bed & Breakfast — Selfoss Hostel, 28, Austurvegur, Selfoss, Sveitarfélagið Árborg, Southern Region, 800, Iceland"
+    },
+    {
+      "day": 3,
+      "category": "住宿",
+      "description": "The Barn（维克穀倉旅館）双人间",
+      "amount": 450,
+      "per_person": false,
+      "location": "The Barn, Norðurfoss, Vík",
+      "location_en": "The Barn Norurfoss Vik",
+      "location_local": "The Barn Vik",
+      "rating": 8.6,
+      "rating_source": "Booking",
+      "rating_count": 5900,
+      "review_summary": "现代风格青旅，遮光窗帘设计贴心，厨房设备齐全，距黑沙滩仅4公里",
+      "services": [
+        "免费停车",
+        "共享厨房",
+        "免费WiFi",
+        "充电桩",
+        "行李寄存",
+        "酒吧"
+      ],
+      "notes": "共用卫浴。双人间总价约¥450/晚。",
+      "search_aliases": [
+        "The Barn Hostel Vik",
+        "The Barn Vik i Myrdal"
+      ],
+      "lat": 63.43783,
+      "lng": -19.060041
+    },
+    {
+      "day": 4,
+      "category": "住宿",
+      "description": "Old Airline Guesthouse（赫本老飞机旅馆）双人间",
+      "amount": 700,
+      "per_person": false,
+      "location": "Old Airline Guesthouse, Hafnarbraut 24, Höfn",
+      "location_en": "Old Airline Guesthouse Hafnarbraut 24 Hofn",
+      "location_local": "Old Airline Guesthouse Hofn",
+      "rating": 9.1,
+      "rating_source": "Booking",
+      "rating_count": null,
+      "review_summary": "1946年老航站楼改造，港边位置风景好，共用厨房和花园，含早餐性价比高",
+      "services": [
+        "免费停车",
+        "共享厨房",
+        "免费WiFi",
+        "含早餐",
+        "花园",
+        "洗衣设施"
+      ],
+      "notes": "共用卫浴，含早餐。双人间总价约¥700/晚。",
+      "search_aliases": [
+        "Old Airline Guesthouse"
+      ],
+      "lat": 64.251263,
+      "lng": -15.209137
+    },
+    {
+      "day": 5,
+      "category": "住宿",
+      "description": "Hafnarstræti Hostel（阿克雷里胶囊青旅）双人间",
+      "amount": 520,
+      "per_person": false,
+      "location": "Hafnarstræti Hostel, Hafnarstræti, Akureyri",
+      "location_en": "Hafnarstraeti Hostel Akureyri",
+      "location_local": "Hafnarstraeti Hostel Akureyri",
+      "rating": 8.4,
+      "rating_source": "Booking",
+      "rating_count": 1600,
+      "review_summary": "市中心胶囊青旅，三家中最便宜，公共厨房超大，厨具充足",
+      "services": [
+        "免费WiFi",
+        "共享厨房",
+        "烧烤设施",
+        "礼品店"
+      ],
+      "notes": "共用卫浴。双人间总价约¥520/晚。",
+      "search_aliases": [
+        "Hafnarstræti Hostel"
+      ],
+      "lat": 65.681499,
+      "lng": -18.090905,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Hafnarstræti Hostel, 99-100, Hafnarstræti, Miðbær, Akureyri, Northeastern Region, 600, Iceland"
+    },
+    {
+      "day": 6,
+      "category": "住宿",
+      "description": "Start Keflavík Airport Hostel（凯夫拉维克机场青旅）双人间",
+      "amount": 450,
+      "per_person": false,
+      "location": "Start Keflavík Airport Hostel, Keflavík",
+      "location_en": "Start Keflavik Airport Hostel",
+      "location_local": "Start Keflavík Airport",
+      "rating": 7.5,
+      "rating_source": "Booking",
+      "rating_count": null,
+      "review_summary": "距机场近，还车赶早班机方便，共用厨房可自炊",
+      "services": [
+        "免费停车",
+        "共享厨房",
+        "免费WiFi"
+      ],
+      "notes": "共用卫浴。双人间总价约¥450/晚。",
+      "lat": 63.968228,
+      "lng": -22.587524,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Start Keflavik Airport, 637, Spring Lane, Ásbrú, Njarðvík, Reykjanesbær, Southern Peninsula, 262, Iceland"
+    },
+    {
+      "day": 2,
+      "category": "餐饮",
+      "description": "Day2餐饮：午餐热狗+晚餐自炊",
+      "amount": 70,
+      "per_person": true,
+      "notes": "Bæjarins Beztu热狗+Bónus超市采购自炊"
+    },
+    {
+      "day": 3,
+      "category": "餐饮",
+      "description": "Day3餐饮：午餐The Soup Company+晚餐Black Crust Pizzeria",
+      "amount": 280,
+      "per_person": true,
+      "location": "The Soup Company, Vik",
+      "location_en": "The Soup Company",
+      "notes": "火山面包汤+黑色披萨，维克两大网红"
+    },
+    {
+      "day": 4,
+      "category": "餐饮",
+      "description": "Day4餐饮：午餐自备干粮+晚餐Heimahumar餐车龙虾汤",
+      "amount": 160,
+      "per_person": true,
+      "location": "Heimahumar, Höfn",
+      "location_en": "Heimahumar food truck",
+      "notes": "性价比龙虾汤仅2100ISK，省钱又吃好"
+    },
+    {
+      "day": 5,
+      "category": "餐饮",
+      "description": "Day5餐饮：全天自炊+阿克雷里Brynja冰淇淋",
+      "amount": 110,
+      "per_person": true,
+      "location": "Brynja, Akureyri",
+      "location_en": "Brynja Ice Cream",
+      "notes": "阿克雷里外食性价比低，推荐自炊。Brynja冰淇淋必试。"
+    },
+    {
+      "day": 6,
+      "category": "餐饮",
+      "description": "Day6餐饮：午餐N1加油站羊肉堡+晚餐自炊清库存",
+      "amount": 140,
+      "per_person": true,
+      "notes": "N1加油站羊肉堡意外好吃"
+    },
+    {
+      "day": 2,
+      "category": "门票/活动",
+      "description": "辛格维利尔国家公园 (Thingvellir)",
+      "time_start": "10:30",
+      "time_end": "12:00",
+      "amount": 0,
+      "per_person": true,
+      "location": "Thingvellir National Park",
+      "location_en": "Thingvellir National Park",
+      "location_local": "Þingvellir",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.7,
+      "rating_source": "Google Maps",
+      "review_summary": "UNESCO世界遗产，北美与欧亚板块裂缝，冰岛议会发源地",
+      "services": [
+        "免费停车场",
+        "游客中心",
+        "洗手间"
+      ],
+      "notes": "免费入场，停车费约750ISK(¥50)。",
+      "lat": 64.278608,
+      "lng": -21.081941,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Þingvellir National Park, Bláskógabyggð, Southern Region, Iceland",
+      "photo_search_queries": [
+        "Thingvellir National Park Iceland",
+        "Þingvellir Ísland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Thingvellir%20National%20Park%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Thingvellir%20National%20Park%20Iceland"
+        },
+        "local_language": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=%C3%9Eingvellir%20%C3%8Dsland",
+          "bing_images": "https://www.bing.com/images/search?q=%C3%9Eingvellir%20%C3%8Dsland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 2,
+      "category": "门票/活动",
+      "description": "盖歇尔间歇泉 (Geysir)",
+      "time_start": "12:30",
+      "time_end": "13:15",
+      "amount": 0,
+      "per_person": true,
+      "location": "Geysir Hot Spring Area",
+      "location_en": "Geysir Geothermal Area",
+      "location_local": "Geysir",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.6,
+      "rating_source": "Google Maps",
+      "review_summary": "Strokkur间歇泉每5-10分钟喷发20米高，免费24小时开放",
+      "services": [
+        "免费停车",
+        "游客中心",
+        "餐厅",
+        "洗手间"
+      ],
+      "notes": "免费入场。",
+      "lat": 64.313838,
+      "lng": -20.29951,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Geysir, Haukadalsvegur, Bláskógabyggð, Southern Region, Iceland",
+      "photo_search_queries": [
+        "Geysir Geothermal Area Iceland",
+        "Geysir Ísland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Geysir%20Geothermal%20Area%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Geysir%20Geothermal%20Area%20Iceland"
+        },
+        "local_language": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Geysir%20%C3%8Dsland",
+          "bing_images": "https://www.bing.com/images/search?q=Geysir%20%C3%8Dsland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 2,
+      "category": "门票/活动",
+      "description": "黄金瀑布 (Gullfoss)",
+      "time_start": "13:30",
+      "time_end": "14:15",
+      "amount": 0,
+      "per_person": true,
+      "location": "Gullfoss Waterfall",
+      "location_en": "Gullfoss",
+      "location_local": "Gullfoss",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.8,
+      "rating_source": "Google Maps",
+      "review_summary": "冰岛最壮观的瀑布之一，双层跌落32米，晴天必有彩虹",
+      "services": [
+        "免费停车",
+        "游客中心",
+        "餐厅",
+        "洗手间"
+      ],
+      "notes": "免费入场。",
+      "lat": 64.314452,
+      "lng": -20.149556,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Gullfoss, Bláskógabyggð, Southern Region, Iceland",
+      "photo_search_queries": [
+        "Gullfoss Iceland",
+        "Gullfoss Waterfall Iceland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Gullfoss%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Gullfoss%20Iceland"
+        },
+        "local_language": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Gullfoss%20Waterfall%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Gullfoss%20Waterfall%20Iceland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 3,
+      "category": "门票/活动",
+      "description": "塞里雅兰瀑布 + Gljufrabui隐秘瀑布 (Seljalandsfoss)",
+      "time_start": "09:30",
+      "time_end": "10:30",
+      "amount": 0,
+      "per_person": true,
+      "location": "Seljalandsfoss",
+      "location_en": "Seljalandsfoss",
+      "location_local": "Seljalandsfoss",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.7,
+      "rating_source": "Google Maps",
+      "review_summary": "走到瀑布水帘后面看世界，隔壁Gljufrabui藏在岩缝里别有洞天",
+      "services": [
+        "停车场",
+        "洗手间",
+        "小型商店"
+      ],
+      "notes": "免费入场，停车费约700ISK。穿雨衣！会被淋湿。",
+      "lat": 63.615457,
+      "lng": -19.988169,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Seljalandsfoss, Rangárþing eystra, Southern Region, Iceland",
+      "photo_search_queries": [
+        "Seljalandsfoss Iceland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Seljalandsfoss%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Seljalandsfoss%20Iceland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 3,
+      "category": "门票/活动",
+      "description": "斯科加瀑布 (Skogafoss)",
+      "time_start": "11:00",
+      "time_end": "11:45",
+      "amount": 0,
+      "per_person": true,
+      "location": "Skogafoss",
+      "location_en": "Skogafoss",
+      "location_local": "Skogafoss",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.8,
+      "rating_source": "Google Maps",
+      "review_summary": "60米落差，晴天常现双彩虹，可登370级台阶俯瞰",
+      "services": [
+        "停车场",
+        "洗手间",
+        "露营地"
+      ],
+      "notes": "免费入场。",
+      "lat": 63.532104,
+      "lng": -19.511292,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Skogafoss, Rangárþing eystra, Southern Region, Iceland",
+      "photo_search_queries": [
+        "Skogafoss Iceland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Skogafoss%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Skogafoss%20Iceland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 3,
+      "category": "门票/活动",
+      "description": "雷尼斯黑沙滩 (Reynisfjara)",
+      "time_start": "13:30",
+      "time_end": "14:30",
+      "amount": 0,
+      "per_person": true,
+      "location": "Reynisfjara Black Sand Beach",
+      "location_en": "Reynisfjara Beach",
+      "location_local": "Reynisfjara",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.7,
+      "rating_source": "Google Maps",
+      "review_summary": "玄武岩柱+黑沙+雷尼斯岩海柱群，冰岛最出片的沙滩，警惕偷袭巨浪远离水线",
+      "services": [
+        "免费停车",
+        "餐厅",
+        "洗手间"
+      ],
+      "notes": "免费入场。危险：偷袭巨浪可把人卷走，务必远离水边至少30米。",
+      "lat": 63.404426,
+      "lng": -19.058799,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Reynisfjara Beach, Vik, Mýrdalshreppur, Southern Region, Iceland",
+      "photo_search_queries": [
+        "Reynisfjara Beach Iceland",
+        "Reynisfjara Ísland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Reynisfjara%20Beach%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Reynisfjara%20Beach%20Iceland"
+        },
+        "local_language": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Reynisfjara%20%C3%8Dsland",
+          "bing_images": "https://www.bing.com/images/search?q=Reynisfjara%20%C3%8Dsland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 4,
+      "category": "门票/活动",
+      "description": "斯卡夫塔山/Svartifoss黑色玄武岩瀑布",
+      "time_start": "10:00",
+      "time_end": "11:30",
+      "amount": 0,
+      "per_person": true,
+      "location": "Skaftafell, Vatnajokull National Park",
+      "location_en": "Skaftafell",
+      "location_local": "Skaftafell",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.6,
+      "rating_source": "Google Maps",
+      "review_summary": "瓦特纳冰川国家公园门户，Svartifoss黑色玄武岩柱瀑布徒步往返约1h",
+      "services": [
+        "游客中心",
+        "停车场",
+        "洗手间",
+        "露营地"
+      ],
+      "notes": "免费入场。Svartifoss徒步往返约1.5h/3km上坡。",
+      "lat": 64.016455,
+      "lng": -16.966458,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Skaftafell, Sveitarfélagið Hornafjörður, Southern Region, Iceland",
+      "photo_search_queries": [
+        "Skaftafell Iceland",
+        "Skaftafell, Vatnajokull National Park Iceland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Skaftafell%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Skaftafell%20Iceland"
+        },
+        "local_language": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Skaftafell%2C%20Vatnajokull%20National%20Park%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Skaftafell%2C%20Vatnajokull%20National%20Park%20Iceland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 4,
+      "category": "门票/活动",
+      "description": "杰古沙龙冰河湖 (Jokulsarlon)",
+      "time_start": "12:30",
+      "time_end": "13:30",
+      "amount": 0,
+      "per_person": true,
+      "location": "Jokulsarlon Glacier Lagoon",
+      "location_en": "Jokulsarlon",
+      "location_local": "Jokulsarlon",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.9,
+      "rating_source": "Google Maps",
+      "review_summary": "冰岛必去！巨型浮冰在湖中漂流入海，海豹在冰山间嬉戏，景色震撼",
+      "services": [
+        "停车场",
+        "洗手间",
+        "咖啡厅",
+        "游船售票处"
+      ],
+      "notes": "免费参观。游船可选（约400元/人，预算原因建议跳过）。",
+      "lat": 64.078321,
+      "lng": -16.227421,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Glacier Lagoon, Sveitarfélagið Hornafjörður, Southern Region, Iceland",
+      "photo_search_queries": [
+        "Jokulsarlon Iceland",
+        "Jokulsarlon Glacier Lagoon Iceland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Jokulsarlon%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Jokulsarlon%20Iceland"
+        },
+        "local_language": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Jokulsarlon%20Glacier%20Lagoon%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Jokulsarlon%20Glacier%20Lagoon%20Iceland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 4,
+      "category": "门票/活动",
+      "description": "钻石沙滩 (Diamond Beach)",
+      "time_start": "13:30",
+      "time_end": "14:00",
+      "amount": 0,
+      "per_person": true,
+      "location": "Diamond Beach, Jokulsarlon",
+      "location_en": "Diamond Beach",
+      "location_local": "Diamond Beach",
+      "transport_mode_from_prev": "walking",
+      "rating": 4.8,
+      "rating_source": "Google Maps",
+      "review_summary": "被海浪冲回黑沙滩的冰块像钻石散落，冰岛最出片的机位之一",
+      "services": [
+        "免费停车"
+      ],
+      "notes": "冰河湖对面，步行过桥即达。免费。",
+      "lat": 64.043791,
+      "lng": -16.176337,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Diamond Beach, Sveitarfélagið Hornafjörður, Southern Region, Iceland",
+      "photo_search_queries": [
+        "Diamond Beach Iceland",
+        "Diamond Beach, Jokulsarlon Iceland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Diamond%20Beach%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Diamond%20Beach%20Iceland"
+        },
+        "local_language": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Diamond%20Beach%2C%20Jokulsarlon%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Diamond%20Beach%2C%20Jokulsarlon%20Iceland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 5,
+      "category": "门票/活动",
+      "description": "黛提瀑布 (Dettifoss)",
+      "time_start": "13:00",
+      "time_end": "13:45",
+      "amount": 0,
+      "per_person": true,
+      "location": "Dettifoss, Vatnajokull National Park",
+      "location_en": "Dettifoss",
+      "location_local": "Dettifoss",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.8,
+      "rating_source": "Google Maps",
+      "review_summary": "欧洲水量最大的瀑布，100米宽44米高，雷神之锤般的水声",
+      "services": [
+        "停车场",
+        "洗手间"
+      ],
+      "notes": "免费入场。从1号公路有岔路，东岸西岸均可到。",
+      "lat": 65.814351,
+      "lng": -16.384491,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Dettifoss, Norðurþing, Northeastern Region, Iceland",
+      "photo_search_queries": [
+        "Dettifoss Iceland",
+        "Dettifoss, Vatnajokull National Park Iceland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Dettifoss%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Dettifoss%20Iceland"
+        },
+        "local_language": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Dettifoss%2C%20Vatnajokull%20National%20Park%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Dettifoss%2C%20Vatnajokull%20National%20Park%20Iceland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 5,
+      "category": "门票/活动",
+      "description": "Namafjall Hverir地热区",
+      "time_start": "14:30",
+      "time_end": "15:00",
+      "amount": 0,
+      "per_person": true,
+      "location": "Namaskard geothermal area, Myvatn",
+      "location_en": "Namafjall Hverir",
+      "location_local": "Namaskard",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.5,
+      "rating_source": "Google Maps",
+      "review_summary": "沸腾泥浆池、蒸汽喷口、硫磺地貌，像走在火星表面",
+      "services": [
+        "免费停车"
+      ],
+      "notes": "免费。硫磺味重，地面很烫，走木栈道。",
+      "lat": 65.647343,
+      "lng": -16.825068,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Námaskarð, Þingeyjarsveit, Northeastern Region, Iceland",
+      "photo_search_queries": [
+        "Namafjall Hverir Iceland",
+        "Namaskard Ísland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Namafjall%20Hverir%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Namafjall%20Hverir%20Iceland"
+        },
+        "local_language": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Namaskard%20%C3%8Dsland",
+          "bing_images": "https://www.bing.com/images/search?q=Namaskard%20%C3%8Dsland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 5,
+      "category": "门票/活动",
+      "description": "米湖温泉 Myvatn Nature Baths（可选）",
+      "time_start": "15:30",
+      "time_end": "17:00",
+      "amount": 275,
+      "per_person": true,
+      "location": "Myvatn Nature Baths",
+      "location_en": "Myvatn Nature Baths",
+      "location_local": "Jardbodin vid Myvatn",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.5,
+      "rating_source": "Google Maps",
+      "review_summary": "比蓝湖便宜、人更少的天然温泉，蓝色温泉水俯瞰米湖景色",
+      "services": [
+        "停车场",
+        "更衣室",
+        "淋浴",
+        "储物柜",
+        "咖啡厅"
+      ],
+      "notes": "约5500ISK(¥275)/人，可选项目。如不去可提前去Godafoss。",
+      "lat": 65.630395,
+      "lng": -16.848336,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Myvatn Nature Baths, 8815, Þingeyjarsveit, Northeastern Region, 660, Iceland",
+      "photo_search_queries": [
+        "Myvatn Nature Baths Iceland",
+        "Jardbodin vid Myvatn Ísland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Myvatn%20Nature%20Baths%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Myvatn%20Nature%20Baths%20Iceland"
+        },
+        "local_language": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Jardbodin%20vid%20Myvatn%20%C3%8Dsland",
+          "bing_images": "https://www.bing.com/images/search?q=Jardbodin%20vid%20Myvatn%20%C3%8Dsland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 5,
+      "category": "门票/活动",
+      "description": "众神瀑布 (Godafoss)",
+      "time_start": "17:45",
+      "time_end": "18:15",
+      "amount": 0,
+      "per_person": true,
+      "location": "Godafoss Waterfall",
+      "location_en": "Godafoss",
+      "location_local": "Godafoss",
+      "transport_mode_from_prev": "driving",
+      "rating": 4.7,
+      "rating_source": "Google Maps",
+      "review_summary": "12米高30米宽的马蹄形瀑布，公元1000年冰岛皈依基督教时众神像投入此瀑布",
+      "services": [
+        "停车场",
+        "洗手间",
+        "商店"
+      ],
+      "notes": "免费入场。",
+      "lat": 65.682816,
+      "lng": -17.550624,
+      "geocode_source": "osm-nominatim:en,is",
+      "geocode_display_name": "Goðafoss, Þingeyjarsveit, Northeastern Region, Iceland",
+      "photo_search_queries": [
+        "Godafoss Iceland",
+        "Godafoss Waterfall Iceland"
+      ],
+      "photo_search_urls": {
+        "primary": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Godafoss%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Godafoss%20Iceland"
+        },
+        "local_language": {
+          "google_images": "https://www.google.com/search?tbm=isch&q=Godafoss%20Waterfall%20Iceland",
+          "bing_images": "https://www.bing.com/images/search?q=Godafoss%20Waterfall%20Iceland"
+        }
+      },
+      "photo_search_note": "请优先打开 Google Images 或 Bing Images 人工核对图片。Bing Images 可作为中国大陆访问相对更方便的备选入口；确认真实、清晰、可用后再把最终图片地址填写到 photo_url。"
+    },
+    {
+      "day": 2,
+      "category": "门票/活动",
+      "description": "辛格维利尔国家公园停车费",
+      "amount": 50,
+      "per_person": false,
+      "notes": "停车费约750ISK(¥50)/车。"
+    }
+  ]
+}
