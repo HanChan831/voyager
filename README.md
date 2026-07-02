@@ -569,5 +569,5 @@ MIT
 ---
 
 <p align="center">
-  <sub>Made with ❤️ and an unreasonable amount of attention to detail</sub>
+  <sub>Made with ❤️ and Hatsune Miku</sub>
 </p>
